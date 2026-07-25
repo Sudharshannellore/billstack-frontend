@@ -1,9 +1,22 @@
 import { motion } from "motion/react";
 import { StatCard } from "../../components/StatCard";
-import { IndianRupee, Users, Repeat, TrendingUp, CreditCard, Activity } from "lucide-react";
+import { 
+  IndianRupee, 
+  Users, 
+  Repeat, 
+  TrendingUp, 
+  CreditCard, 
+  Activity, 
+  ArrowUpRight, 
+  ArrowRight,
+  Sparkles,
+  Zap,
+  Calendar
+} from "lucide-react";
+import { Link } from "react-router";
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -25,37 +38,53 @@ const revenueData = [
 ];
 
 const planDistribution = [
-  { id: "pro", name: "Pro", value: 45, color: "#8B5CF6" },
-  { id: "business", name: "Business", value: 30, color: "#06B6D4" },
-  { id: "enterprise", name: "Enterprise", value: 15, color: "#10B981" },
-  { id: "free", name: "Free", value: 10, color: "#A1A1AA" },
+  { id: "pro", name: "Pro Plan", value: 45, color: "#8B5CF6" },
+  { id: "business", name: "Business Plan", value: 30, color: "#06B6D4" },
+  { id: "enterprise", name: "Enterprise Custom", value: 15, color: "#10B981" },
+  { id: "free", name: "Free Tier", value: 10, color: "#71717A" },
 ];
 
 const recentSubscriptions = [
-  { customer: "Alice Johnson", plan: "Pro", amount: "₹29/mo", status: "active" },
-  { customer: "Bob Smith", plan: "Business", amount: "₹99/mo", status: "active" },
-  { customer: "Carol White", plan: "Enterprise", amount: "₹299/mo", status: "trial" },
-  { customer: "David Brown", plan: "Pro", amount: "₹29/mo", status: "active" },
+  { customer: "Alice Johnson", plan: "Pro Plan", amount: "₹2,999/mo", status: "active", email: "alice@example.com" },
+  { customer: "Bob Smith", plan: "Business Plan", amount: "₹9,999/mo", status: "active", email: "bob@company.com" },
+  { customer: "Carol White", plan: "Enterprise Custom", amount: "₹29,999/mo", status: "trial", email: "carol@startup.io" },
+  { customer: "David Brown", plan: "Pro Plan", amount: "₹2,999/mo", status: "active", email: "david@tech.com" },
 ];
 
 export function TenantDashboard() {
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex items-center justify-between">
+    <motion.div 
+      initial={{ opacity: 0, y: 15 }} 
+      animate={{ opacity: 1, y: 0 }} 
+      className="space-y-8"
+    >
+      {/* Upper Welcome Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">Welcome back! Here's your business overview</p>
+          <div className="flex items-center gap-2 mb-1.5">
+            <h1 className="text-3xl font-extrabold tracking-tight text-white">Business Dashboard</h1>
+            <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-primary/10 border border-primary/20 text-primary rounded-full flex items-center gap-1">
+              <Sparkles className="w-2.5 h-2.5" />
+              Live Feed
+            </span>
+          </div>
+          <p className="text-muted-foreground text-sm">Here's your aggregated SaaS performance and billing lifecycle operations.</p>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark rounded-lg text-white font-medium shadow-lg shadow-primary/30"
-        >
-          Create Plan
-        </motion.button>
+
+        <Link to="/tenant/plans/create">
+          <motion.button
+            whileHover={{ scale: 1.03, y: -1 }}
+            whileTap={{ scale: 0.97 }}
+            className="px-5 py-3 bg-gradient-to-r from-primary to-violet-600 hover:from-primary-dark hover:to-violet-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-2"
+          >
+            <Zap className="w-4 h-4" />
+            <span>Create New Plan</span>
+          </motion.button>
+        </Link>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Primary Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard
           title="Monthly Revenue"
           value="₹34,680"
@@ -97,7 +126,7 @@ export function TenantDashboard() {
           delay={0.4}
         />
         <StatCard
-          title="API Calls"
+          title="API Events Ingested"
           value="2.4M"
           change="+32%"
           changeType="positive"
@@ -106,151 +135,180 @@ export function TenantDashboard() {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Charts Grid Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        
+        {/* Main Revenue Overtime (Area Chart) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="lg:col-span-2 p-6 bg-card border border-border rounded-xl"
+          className="lg:col-span-8 p-6 bg-card border border-white/[0.06] rounded-2xl flex flex-col justify-between"
         >
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold">Revenue Overview</h3>
-            <div className="flex items-center gap-2">
-              <button className="px-3 py-1.5 bg-primary text-white text-sm rounded-lg">
+            <div>
+              <h3 className="text-lg font-bold text-white">Revenue Operations Overview</h3>
+              <p className="text-xs text-muted-foreground font-light mt-0.5">Aggregated billing collections over the past week.</p>
+            </div>
+            <div className="flex items-center gap-1 bg-white/[0.02] border border-white/[0.06] rounded-xl p-1">
+              <button className="px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded-lg shadow-md">
                 Week
               </button>
-              <button className="px-3 py-1.5 bg-muted text-muted-foreground text-sm rounded-lg hover:bg-primary hover:text-white transition-colors">
+              <button className="px-3 py-1.5 text-muted-foreground hover:text-white text-xs font-semibold rounded-lg">
                 Month
               </button>
-              <button className="px-3 py-1.5 bg-muted text-muted-foreground text-sm rounded-lg hover:bg-primary hover:text-white transition-colors">
+              <button className="px-3 py-1.5 text-muted-foreground hover:text-white text-xs font-semibold rounded-lg">
                 Year
               </button>
             </div>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={revenueData}>
-              <defs>
-                <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#8B5CF6" />
-                  <stop offset="100%" stopColor="#6D28D9" />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-              <XAxis dataKey="date" stroke="#A1A1AA" />
-              <YAxis stroke="#A1A1AA" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#16161D",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: "8px",
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke="url(#lineGradient)"
-                strokeWidth={3}
-                dot={{ fill: "#8B5CF6", strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, strokeWidth: 0 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+
+          <div className="h-[280px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={revenueData}>
+                <defs>
+                  <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                <XAxis dataKey="date" stroke="#71717A" fontSize={11} tickLine={false} />
+                <YAxis stroke="#71717A" fontSize={11} tickLine={false} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "#0B0B0F",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderRadius: "12px",
+                    fontSize: 12
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#8B5CF6"
+                  strokeWidth={2.5}
+                  fillOpacity={1}
+                  fill="url(#revenueGrad)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </motion.div>
 
+        {/* Plan Share (Pie Chart) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="p-6 bg-card border border-border rounded-xl"
+          className="lg:col-span-4 p-6 bg-card border border-white/[0.06] rounded-2xl flex flex-col justify-between"
         >
-          <h3 className="text-lg font-semibold mb-6">Plan Distribution</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={planDistribution}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={80}
-                paddingAngle={2}
-                dataKey="value"
-              >
-                {planDistribution.map((entry) => (
-                  <Cell key={entry.id} fill={entry.color} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
+          <div>
+            <h3 className="text-lg font-bold text-white">Active Plan Share</h3>
+            <p className="text-xs text-muted-foreground font-light mt-0.5">Allocation by subscriber contracts.</p>
+          </div>
+
+          <div className="h-[180px] w-full flex items-center justify-center relative my-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={planDistribution}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={50}
+                  outerRadius={70}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  {planDistribution.map((entry) => (
+                    <Cell key={entry.id} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute flex flex-col items-center justify-center">
+              <span className="text-[10px] text-muted-foreground uppercase font-semibold">Active Profiles</span>
+              <span className="text-lg font-extrabold text-white">892</span>
+            </div>
+          </div>
+
           <div className="space-y-2 mt-4">
             {planDistribution.map((plan) => (
-              <div key={plan.name} className="flex items-center justify-between">
+              <div key={plan.name} className="flex items-center justify-between text-xs border-b border-white/[0.02] pb-1.5 last:border-b-0 last:pb-0">
                 <div className="flex items-center gap-2">
                   <div
-                    className="w-3 h-3 rounded-full"
+                    className="w-2.5 h-2.5 rounded-full"
                     style={{ backgroundColor: plan.color }}
                   />
-                  <span className="text-sm text-muted-foreground">{plan.name}</span>
+                  <span className="text-muted-foreground font-medium">{plan.name}</span>
                 </div>
-                <span className="text-sm font-medium">{plan.value}%</span>
+                <span className="font-bold text-white">{plan.value}%</span>
               </div>
             ))}
           </div>
         </motion.div>
       </div>
 
+      {/* Recent Subscriptions Audit log */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
-        className="p-6 bg-card border border-border rounded-xl"
+        className="p-6 bg-card border border-white/[0.06] rounded-2xl"
       >
-        <h3 className="text-lg font-semibold mb-6">Recent Subscriptions</h3>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-lg font-bold text-white">Recent Active Subscriptions</h3>
+            <p className="text-xs text-muted-foreground font-light mt-0.5">Real-time listing of incoming customer plan provisions.</p>
+          </div>
+          <Link to="/tenant/subscriptions" className="flex items-center gap-1 text-xs text-primary font-bold hover:underline">
+            <span>Manage all subscriptions</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                  Customer
-                </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                  Plan
-                </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                  Amount
-                </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-muted-foreground">
-                  Status
-                </th>
+              <tr className="border-b border-white/[0.06] text-left text-xs font-semibold text-muted-foreground">
+                <th className="pb-3 pl-4">Customer</th>
+                <th className="pb-3">Email Address</th>
+                <th className="pb-3">Subscribed Plan</th>
+                <th className="pb-3">Billing Value</th>
+                <th className="pb-3 pr-4">Status</th>
               </tr>
             </thead>
             <tbody>
               {recentSubscriptions.map((sub, index) => (
-                <motion.tr
+                <tr
                   key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.8 + index * 0.1 }}
-                  className="border-b border-border hover:bg-muted/50 transition-colors"
+                  className="border-b border-white/[0.02] last:border-b-0 hover:bg-white/[0.01] transition-colors text-xs text-white font-medium animate-fadeIn"
                 >
-                  <td className="py-3 px-4">{sub.customer}</td>
-                  <td className="py-3 px-4">
-                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded">
+                  <td className="py-4 pl-4 flex items-center gap-3 font-semibold">
+                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/[0.08] flex items-center justify-center font-bold text-[11px]">
+                      {sub.customer.split(' ').map(n=>n[0]).join('')}
+                    </div>
+                    <span>{sub.customer}</span>
+                  </td>
+                  <td className="py-4 text-muted-foreground">{sub.email}</td>
+                  <td className="py-4">
+                    <span className="px-2.5 py-1 bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold rounded-lg uppercase tracking-wider">
                       {sub.plan}
                     </span>
                   </td>
-                  <td className="py-3 px-4 font-medium">{sub.amount}</td>
-                  <td className="py-3 px-4">
+                  <td className="py-4 font-bold">{sub.amount}</td>
+                  <td className="py-4 pr-4">
                     <span
-                      className={`px-2 py-1 text-xs rounded ${
+                      className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider border ${
                         sub.status === "active"
-                          ? "bg-success/10 text-success"
-                          : "bg-warning/10 text-warning"
+                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                          : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                       }`}
                     >
                       {sub.status}
                     </span>
                   </td>
-                </motion.tr>
+                </tr>
               ))}
             </tbody>
           </table>

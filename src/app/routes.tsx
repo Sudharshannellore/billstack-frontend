@@ -1,6 +1,5 @@
 import { createBrowserRouter } from "react-router";
 import { Landing } from "./pages/Landing";
-import { TenantSignup } from "./pages/TenantSignup";
 import { SuperAdminLayout } from "./layouts/SuperAdminLayout";
 import { TenantLayout } from "./layouts/TenantLayout";
 
@@ -41,10 +40,6 @@ export const router = createBrowserRouter([
   {
     path: "/",
     Component: Landing,
-  },
-  {
-    path: "/signup",
-    Component: TenantSignup,
   },
   {
     path: "/super-admin",

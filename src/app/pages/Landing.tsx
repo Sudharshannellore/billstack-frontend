@@ -1,152 +1,485 @@
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { Link } from "react-router";
-import { ArrowRight, Zap, Shield, BarChart3, CreditCard, Globe, Cpu } from "lucide-react";
+import {
+  ArrowRight,
+  Zap,
+  Shield,
+  BarChart3,
+  CreditCard,
+  Globe,
+  Cpu,
+  Check,
+  ChevronRight,
+  Database,
+  Coins,
+  RefreshCw,
+  Terminal,
+  Sparkles,
+  Lock,
+  ChevronDown,
+  Copy
+} from "lucide-react";
+import { useState, useEffect } from "react";
+
+// Mock billing event simulation data
+const billingStylesPreview = {
+  subscription: {
+    title: "Subscription Billing",
+    badge: "Recurring Plans",
+    description: "Charge customers on a fixed weekly, monthly, or annual cadence. Auto-renew, handle grace periods, and handle dunning out-of-the-box.",
+    metricLabel: "MRR Impact",
+    metricValue: "₹4,82,500/mo",
+    simulateText: "Upgrade customer plan",
+    code: `const subscription = await billstack.subscriptions.create({
+  customerId: "cust_982",
+  planId: "plan_enterprise_gold",
+  coupon: "WELCOME50"
+});`
+  },
+  usage: {
+    title: "Usage-Based Billing",
+    badge: "Pay-As-You-Go",
+    description: "Measure usage events in real-time (APIs, compute minutes, terabytes) and aggregate them at the end of the month dynamically.",
+    metricLabel: "Events Ingested",
+    metricValue: "18,429,102 / sec",
+    simulateText: "Ingest 5,000 API events",
+    code: `await billstack.events.track({
+  customerId: "cust_982",
+  eventName: "api_call",
+  units: 5000,
+  timestamp: Date.now()
+});`
+  },
+  credits: {
+    title: "Credits & Wallets",
+    badge: "Prepaid Tokens",
+    description: "Allow customers to buy tokens/credits upfront. Deduct credits based on complex consumption actions or LLM token usage.",
+    metricLabel: "Wallet Balance",
+    metricValue: "15,280 Credits",
+    simulateText: "Top up wallet (+5k credits)",
+    code: `await billstack.wallets.topup({
+  customerId: "cust_982",
+  credits: 5000,
+  reference: "stripe_ch_9381"
+});`
+  },
+  telecom: {
+    title: "Data Packs & Validity",
+    badge: "Quota-Based Packs",
+    description: "Provision resources with custom validity periods and usage caps (e.g. 50GB for 28 days) with automatic fallback rates.",
+    metricLabel: "Remaining Quota",
+    metricValue: "42.8 GB / 50 GB",
+    simulateText: "Add 10GB Data Pack",
+    code: `await billstack.packs.provision({
+  customerId: "cust_982",
+  packId: "pack_data_10gb",
+  validityDays: 28
+});`
+  }
+};
 
 export function Landing() {
+  const [selectedStyle, setSelectedStyle] = useState<keyof typeof billingStylesPreview>("subscription");
+  const [copiedCode, setCopiedCode] = useState(false);
+  const [simulatedMetrics, setSimulatedMetrics] = useState({
+    subscription: 482500,
+    usage: 18429102,
+    credits: 15280,
+    telecom: 42.8
+  });
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Scroll listener to toggle navbar background
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Auto-simulate stats to make the dashboard feel "alive"
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSimulatedMetrics(prev => ({
+        ...prev,
+        usage: prev.usage + Math.floor(Math.random() * 150) + 10,
+        credits: Math.max(2000, prev.credits - (Math.random() > 0.8 ? 5 : 0))
+      }));
+    }, 1500);
+    return () => clearInterval(interval);
+  }, []);
+
+
+  const triggerSimulation = () => {
+    if (selectedStyle === "subscription") {
+      setSimulatedMetrics(prev => ({ ...prev, subscription: prev.subscription + 2900 }));
+    } else if (selectedStyle === "usage") {
+      setSimulatedMetrics(prev => ({ ...prev, usage: prev.usage + 5000 }));
+    } else if (selectedStyle === "credits") {
+      setSimulatedMetrics(prev => ({ ...prev, credits: prev.credits + 5000 }));
+    } else if (selectedStyle === "telecom") {
+      setSimulatedMetrics(prev => ({ ...prev, telecom: Math.min(50, Number((prev.telecom + 10).toFixed(1))) }));
+    }
+  };
+
+  const copyCodeToClipboard = () => {
+    navigator.clipboard.writeText(billingStylesPreview[selectedStyle].code);
+    setCopiedCode(true);
+    setTimeout(() => setCopiedCode(false), 2000);
+  };
+
+  const formatMetric = (style: keyof typeof billingStylesPreview) => {
+    const val = simulatedMetrics[style];
+    if (style === "subscription") return `₹${val.toLocaleString()}/mo`;
+    if (style === "usage") return `${val.toLocaleString()} events`;
+    if (style === "credits") return `${val.toLocaleString()} Credits`;
+    if (style === "telecom") return `${val} GB / 50 GB`;
+    return String(val);
+  };
+
+  const faqs = [
+    {
+      q: "Can I combine subscription and usage-based billing?",
+      a: "Yes! BillStack fully supports hybrid models. You can charge a base subscription price of ₹2,999/month and add metered usage components (e.g. ₹0.05 per API call) on top of it."
+    },
+    {
+      q: "How does the multi-tenant isolation work?",
+      a: "Every tenant is fully isolated logically. Database schemas and cached data partitions are segmented to guarantee high performance, security, and strict data compliance."
+    },
+    {
+      q: "What payment gateways do you support?",
+      a: "We support Stripe, Razorpay, Paddle, and Adyen out-of-the-box. You can configure multiple gateways at once for localized payment routes."
+    },
+    {
+      q: "Is there a sandbox environment for developer testing?",
+      a: "Absolutely. Every account gets a Sandbox environment (with test API keys) and a Production environment. You can toggle between them seamlessly."
+    }
+  ];
+
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-xl border-b border-border">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <div className="min-h-screen bg-[#060608] text-foreground selection:bg-primary selection:text-white overflow-hidden relative font-sans">
+
+      {/* Visual background decorations - glowing mesh elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
+      <div className="absolute top-[20%] right-[-10%] w-[45%] h-[45%] rounded-full bg-cyan-500/10 blur-[130px] pointer-events-none" />
+      <div className="absolute bottom-[10%] left-[20%] w-[35%] h-[35%] rounded-full bg-violet-600/10 blur-[120px] pointer-events-none" />
+
+      {/* Grid Pattern Overlay */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+
+      {/* Dynamic Navbar */}
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled
+          ? "bg-[#060608]/85 backdrop-blur-md border-b border-white/[0.06] py-0"
+          : "bg-transparent border-b border-transparent py-2"
+        }`}>
+        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex items-center gap-2"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-3 cursor-pointer"
           >
-            <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary-dark rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">B</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-primary via-violet-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-primary/20">
+              <span className="text-white font-black text-xl tracking-tighter">B</span>
             </div>
-            <span className="text-xl font-semibold">BillStack</span>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold tracking-tight text-white leading-none">BillStack</span>
+              <span className="text-[10px] text-primary font-semibold tracking-widest uppercase">Infrastructure</span>
+            </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
-            <Link to="/signup">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground"
+          >
+            <a href="#features" className="hover:text-white transition-colors">Features</a>
+            <a href="#simulator" className="hover:text-white transition-colors">Interactive Demo</a>
+            <a href="#developers" className="hover:text-white transition-colors">Developers</a>
+            <a href="#faqs" className="hover:text-white transition-colors">FAQ</a>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center gap-4"
+          >
+            <Link to="/tenant" className="text-sm font-medium text-muted-foreground hover:text-white transition-colors">
+              Tenant Portal
+            </Link>
+            <Link to="/super-admin">
               <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-6 py-2.5 bg-gradient-to-r from-primary to-primary-dark rounded-lg text-white font-medium shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all"
+                whileHover={{ scale: 1.03, boxShadow: "0 0 20px rgba(139, 92, 246, 0.4)" }}
+                whileTap={{ scale: 0.97 }}
+                className="relative px-5 py-2.5 rounded-xl bg-gradient-to-r from-primary to-violet-600 text-white text-sm font-semibold shadow-md transition-all duration-300"
               >
-                Get Started
+                Super Admin
               </motion.button>
             </Link>
           </motion.div>
         </div>
       </nav>
 
-      <section className="pt-32 pb-20 px-6">
-        <div className="max-w-6xl mx-auto">
+      {/* Hero Section */}
+      <section className="pt-40 pb-24 px-6 relative z-10">
+        <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 px-3 py-1.5 bg-white/[0.03] border border-white/[0.08] rounded-full text-xs font-semibold text-primary mb-8"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
+            <span>Introducing BillStack 2.0</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight text-white max-w-5xl leading-[1.05] mb-8"
+          >
+            SaaS Billing that feels like{" "}
+            <span className="bg-gradient-to-r from-primary via-violet-400 to-cyan-400 bg-clip-text text-transparent drop-shadow-sm">
+              Magic.
+            </span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 25 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-lg md:text-xl text-muted-foreground max-w-3xl leading-relaxed mb-12 font-light"
+          >
+            The modular revenue API that supports multi-tenant isolation, real-time usage event ingestion,
+            automated telecom data packs, credits wallets, and hybrid subscription plans.
+          </motion.p>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center"
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="flex flex-col sm:flex-row items-center gap-4 mb-20"
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-sm text-primary mb-6"
-            >
-              <Zap className="w-4 h-4" />
-              <span>Next-gen billing platform</span>
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-6xl font-bold mb-6 bg-gradient-to-r from-white via-white to-primary bg-clip-text text-transparent"
-            >
-              Revenue infrastructure
-              <br />
-              for modern SaaS
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="text-xl text-muted-foreground max-w-2xl mx-auto mb-10"
-            >
-              Multi-tenant billing platform with subscription management, usage tracking, and
-              automated revenue operations. Built for scale.
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="flex items-center justify-center gap-4"
-            >
-              <Link to="/signup">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 bg-gradient-to-r from-primary to-primary-dark rounded-xl text-white font-medium shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all flex items-center gap-2 group"
-                >
-                  <span>Start free trial</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </motion.button>
-              </Link>
-              <Link to="/tenant">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="px-8 py-4 bg-card border border-border rounded-xl text-foreground font-medium hover:border-primary transition-all"
-                >
-                  View Demo
-                </motion.button>
-              </Link>
-            </motion.div>
+            <Link to="/tenant" className="w-full sm:w-auto">
+              <motion.button
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary via-violet-600 to-indigo-600 text-white font-bold rounded-xl shadow-xl shadow-primary/30 flex items-center justify-center gap-2 group transition-all"
+              >
+                <span>Access Tenant Portal</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </motion.button>
+            </Link>
+            <Link to="/super-admin" className="w-full sm:w-auto">
+              <motion.button
+                whileHover={{ scale: 1.05, y: -2, backgroundColor: "rgba(255,255,255,0.06)" }}
+                whileTap={{ scale: 0.95 }}
+                className="w-full sm:w-auto px-8 py-4 bg-white/[0.02] border border-white/[0.08] hover:border-white/20 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all"
+              >
+                <span>Access Super Admin</span>
+              </motion.button>
+            </Link>
           </motion.div>
         </div>
       </section>
 
-      <section className="py-20 px-6">
+      {/* Real-time Interactive Simulator Section */}
+      <section id="simulator" className="py-16 px-6 relative z-10">
         <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-5xl font-extrabold mb-4">Choose Your Billing Architecture</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Click through our natively integrated billing styles and run events in the console to watch metrics change live.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+            {/* Left selector menu */}
+            <div className="lg:col-span-4 flex flex-col gap-3 justify-center">
+              {(Object.keys(billingStylesPreview) as Array<keyof typeof billingStylesPreview>).map((key) => {
+                const isSelected = selectedStyle === key;
+                return (
+                  <motion.button
+                    key={key}
+                    whileHover={{ x: 6 }}
+                    onClick={() => {
+                      setSelectedStyle(key);
+                      setCopiedCode(false);
+                    }}
+                    className={`text-left p-5 rounded-2xl border transition-all duration-300 flex flex-col gap-1 relative overflow-hidden ${isSelected
+                      ? "bg-gradient-to-br from-primary/10 to-violet-500/5 border-primary/30 shadow-xl shadow-primary/5"
+                      : "bg-white/[0.01] hover:bg-white/[0.03] border-white/[0.04] hover:border-white/[0.1]"
+                      }`}
+                  >
+                    {isSelected && (
+                      <motion.div
+                        layoutId="activeGlow"
+                        className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-cyan-400"
+                      />
+                    )}
+                    <span className={`text-xs font-bold uppercase tracking-wider ${isSelected ? 'text-primary' : 'text-muted-foreground'}`}>
+                      {billingStylesPreview[key].badge}
+                    </span>
+                    <span className="text-lg font-bold text-white">
+                      {billingStylesPreview[key].title}
+                    </span>
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {/* Right side interactive console and mock dashboard */}
+            <div className="lg:col-span-8 bg-[#0a0a0f] border border-white/[0.08] rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+              {/* Header */}
+              <div className="px-6 py-4 bg-white/[0.02] border-b border-white/[0.06] flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-rose-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+                  <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
+                  <span className="text-xs text-muted-foreground font-mono ml-3">billstack-sandbox-console</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-primary font-semibold">
+                  <span className="w-2 h-2 rounded-full bg-primary animate-ping" />
+                  Live Simulator
+                </div>
+              </div>
+
+              {/* Console & Preview Body */}
+              <div className="p-6 md:p-8 flex-1 grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+
+                {/* Code Window */}
+                <div className="flex flex-col h-full justify-between">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-muted-foreground text-xs font-mono">
+                      <Terminal className="w-4 h-4 text-primary" />
+                      <span>Node.js / SDK Method</span>
+                    </div>
+                    <div className="relative bg-black/60 rounded-xl p-4 border border-white/[0.04] font-mono text-xs text-violet-300 leading-relaxed overflow-x-auto min-h-[140px] flex items-center">
+                      <pre className="w-full"><code>{billingStylesPreview[selectedStyle].code}</code></pre>
+                      <button
+                        onClick={copyCodeToClipboard}
+                        className="absolute top-2 right-2 p-1.5 rounded bg-white/5 hover:bg-white/10 text-muted-foreground hover:text-white transition-colors"
+                      >
+                        {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={triggerSimulation}
+                      className="w-full py-3 px-4 bg-primary text-white rounded-xl font-semibold text-sm shadow-md hover:bg-primary-dark transition-all flex items-center justify-center gap-2 group"
+                    >
+                      <RefreshCw className="w-4 h-4 group-hover:rotate-45 transition-transform" />
+                      <span>{billingStylesPreview[selectedStyle].simulateText}</span>
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Dashboard Metrics Window */}
+                <div className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-6 flex flex-col gap-6 h-full justify-between">
+                  <div className="space-y-1">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">
+                      {billingStylesPreview[selectedStyle].title}
+                    </h4>
+                    <p className="text-xs text-muted-foreground italic font-light">
+                      {billingStylesPreview[selectedStyle].description}
+                    </p>
+                  </div>
+
+                  <div className="p-4 bg-black/40 rounded-xl border border-white/[0.04]">
+                    <span className="text-xs font-medium text-muted-foreground block mb-1">
+                      {billingStylesPreview[selectedStyle].metricLabel}
+                    </span>
+                    <span className="text-2xl md:text-3xl font-black text-white tracking-tight tabular-nums">
+                      {formatMetric(selectedStyle)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <Shield className="w-4 h-4 text-emerald-400" />
+                    <span>Real-time billing state verified</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Grid of Core Strengths */}
+      <section id="features" className="py-24 px-6 relative z-10 border-t border-white/[0.04] bg-white/[0.01]">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-extrabold mb-4">Engineered for High-Growth SaaS</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Everything you need to capture, configure, and scale your revenue operations dynamically.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                icon: CreditCard,
-                title: "Flexible Billing",
-                description: "Support subscription, usage-based, credits, bundles, and hybrid models",
-              },
-              {
                 icon: Shield,
-                title: "Enterprise Ready",
-                description: "Multi-tenant isolation, role-based access, and comprehensive audit logs",
-              },
-              {
-                icon: BarChart3,
-                title: "Analytics & Reports",
-                description: "Track revenue, usage, and customer metrics with live dashboards",
-              },
-              {
-                icon: Globe,
-                title: "Developer APIs",
-                description: "Complete REST APIs, webhooks, and comprehensive documentation",
+                title: "Strict Multi-Tenancy",
+                description: "Complete logical and operational tenant isolation designed for secure, distributed cloud environments.",
+                color: "from-blue-500/20 to-indigo-500/10"
               },
               {
                 icon: Zap,
-                title: "Instant Setup",
-                description: "Go live in minutes with plan templates and guided onboarding",
+                title: "Sub-millisecond Ingestion",
+                description: "Send usage events at scale without throttling. Built to handle million-event payloads concurrently.",
+                color: "from-amber-500/20 to-orange-500/10"
               },
-            ].map((feature, index) => {
+              {
+                icon: BarChart3,
+                title: "Live Analytics & MRR",
+                description: "Deep analytics tracking active subscriptions, churn metrics, and revenue collections instantly.",
+                color: "from-emerald-500/20 to-teal-500/10"
+              },
+              {
+                icon: Coins,
+                title: "Credits & Token Wallets",
+                description: "Let customers prepay or top up wallets. Automatically deduct tokens as consumption occurs.",
+                color: "from-purple-500/20 to-violet-500/10"
+              },
+              {
+                icon: Globe,
+                title: "Unified Webhooks",
+                description: "Receive webhooks for payment renewals, cancellations, failures, and limit thresholds.",
+                color: "from-cyan-500/20 to-sky-500/10"
+              },
+              {
+                icon: Lock,
+                title: "Enterprise Compliance",
+                description: "Complete audit logs, role-based access controls, and infrastructure backup triggers built-in.",
+                color: "from-rose-500/20 to-red-500/10"
+              }
+            ].map((feature, idx) => {
               const Icon = feature.icon;
               return (
                 <motion.div
                   key={feature.title}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 25 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  whileHover={{ y: -4 }}
-                  className="p-6 bg-card border border-border rounded-xl hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10 transition-all group"
+                  transition={{ delay: idx * 0.08 }}
+                  whileHover={{ y: -6, borderColor: "rgba(139, 92, 246, 0.3)" }}
+                  className="p-8 bg-[#09090c] border border-white/[0.05] rounded-3xl hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 flex flex-col gap-4 relative group"
                 >
-                  <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary-dark/20 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                    <Icon className="w-6 h-6 text-primary" />
+                  <div className={`w-12 h-12 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center`}>
+                    <Icon className="w-5 h-5 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">{feature.description}</p>
+                  <h3 className="text-xl font-bold text-white">{feature.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed font-light">{feature.description}</p>
                 </motion.div>
               );
             })}
@@ -154,29 +487,95 @@ export function Landing() {
         </div>
       </section>
 
-      <section className="py-20 px-6 border-t border-border">
-        <div className="max-w-4xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-4xl font-bold mb-6">Ready to monetize at scale?</h2>
-            <p className="text-lg text-muted-foreground mb-8">
-              Join hundreds of companies using BillStack for their billing infrastructure
-            </p>
-            <Link to="/signup">
+      {/* FAQ Accordion Section */}
+      <section id="faqs" className="py-24 px-6 relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-extrabold mb-4">Frequently Asked Questions</h2>
+            <p className="text-muted-foreground">Quick answers to clear up the basics.</p>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, idx) => {
+              const isOpen = activeFaq === idx;
+              return (
+                <div
+                  key={idx}
+                  className="bg-white/[0.01] border border-white/[0.05] rounded-2xl overflow-hidden transition-all duration-300"
+                >
+                  <button
+                    onClick={() => setActiveFaq(isOpen ? null : idx)}
+                    className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-white/[0.02] transition-colors"
+                  >
+                    <span className="font-bold text-white">{faq.q}</span>
+                    <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        <div className="px-6 pb-5 pt-1 text-sm text-muted-foreground font-light leading-relaxed border-t border-white/[0.03]">
+                          {faq.a}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Footer Wrapper */}
+      <section className="py-28 px-6 border-t border-white/[0.04] bg-gradient-to-b from-transparent to-[#09090c] relative z-10">
+        <div className="max-w-4xl mx-auto text-center flex flex-col items-center">
+          <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
+            Deploy revenue infrastructure in minutes.
+          </h2>
+          <p className="text-lg text-muted-foreground mb-12 max-w-2xl font-light leading-relaxed">
+            Stop coding subscription logic, credit limits, and usage webhooks from scratch. Build on a robust foundation.
+          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full justify-center">
+            <Link to="/tenant" className="w-full sm:w-auto">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 bg-gradient-to-r from-primary to-primary-dark rounded-xl text-white font-medium shadow-2xl shadow-primary/40 hover:shadow-primary/60 transition-all"
+                className="w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary to-violet-600 text-white font-bold rounded-xl shadow-lg shadow-primary/30"
               >
-                Get Started Free
+                Access Tenant Portal
               </motion.button>
             </Link>
-          </motion.div>
+            <Link to="/super-admin" className="w-full sm:w-auto">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-full sm:w-auto px-8 py-4 bg-white/[0.02] border border-white/[0.06] hover:border-white/10 text-white font-semibold rounded-xl"
+              >
+                Access Super Admin
+              </motion.button>
+            </Link>
+          </div>
         </div>
       </section>
+
+      {/* Footnote */}
+      <footer className="py-12 border-t border-white/[0.04] text-center text-xs text-muted-foreground relative z-10">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-primary rounded flex items-center justify-center">
+              <span className="text-white text-xs font-black">B</span>
+            </div>
+            <span className="font-bold text-white">BillStack</span>
+          </div>
+          <p>© {new Date().getFullYear()} BillStack. All rights reserved. Platform infrastructure is sandbox-verified.</p>
+        </div>
+      </footer>
+
     </div>
   );
 }
