@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Users, Mail, Phone, MoreVertical, Edit, Trash2, MapPin, Globe, User, Briefcase } from "lucide-react";
+import { Plus, Users, Mail, Phone, MoreVertical, Edit, Trash2, MapPin, Globe, User, Briefcase, Clock, IndianRupee, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -199,7 +199,7 @@ export function Customers() {
                   <FormField
                     control={form.control}
                     name="email"
-                    rules={{ 
+                    rules={{
                       required: "Email is required",
                       pattern: {
                         value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -256,7 +256,7 @@ export function Customers() {
                   />
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div className="col-span-2">
-                       <FormField
+                      <FormField
                         control={form.control}
                         name="city"
                         rules={{ required: "Required" }}
@@ -368,151 +368,187 @@ export function Customers() {
         </DialogContent>
       </Dialog>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="p-6 bg-card border border-border rounded-xl"
-        >
-          <div className="text-3xl font-bold mb-1">1,284</div>
-          <div className="text-sm text-muted-foreground">Total Customers</div>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="p-6 bg-card border border-border rounded-xl"
-        >
-          <div className="text-3xl font-bold mb-1">892</div>
-          <div className="text-sm text-muted-foreground">Active</div>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="p-6 bg-card border border-border rounded-xl"
-        >
-          <div className="text-3xl font-bold mb-1">48</div>
-          <div className="text-sm text-muted-foreground">Trial</div>
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="p-6 bg-card border border-border rounded-xl"
-        >
-          <div className="text-3xl font-bold mb-1">$34.6K</div>
-          <div className="text-sm text-muted-foreground">Total MRR</div>
-        </motion.div>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          {
+            label: "Total Customers", value: "1,284",
+            icon: Users, color: "text-violet-300",
+            iconBg: "bg-violet-500/20 border border-violet-500/30",
+            gradient: "from-violet-600/20 via-transparent to-transparent",
+            glow: "bg-violet-500/10",
+            border: "border-violet-500/20",
+            topAccent: "from-violet-500 to-purple-500",
+          },
+          {
+            label: "Active Customers", value: "892",
+            icon: CheckCircle, color: "text-emerald-300",
+            iconBg: "bg-emerald-500/20 border border-emerald-500/30",
+            gradient: "from-emerald-600/20 via-transparent to-transparent",
+            glow: "bg-emerald-500/10",
+            border: "border-emerald-500/20",
+            topAccent: "from-emerald-500 to-teal-500",
+          },
+          {
+            label: "Trial Customers", value: "48",
+            icon: Clock, color: "text-amber-300",
+            iconBg: "bg-amber-500/20 border border-amber-500/30",
+            gradient: "from-amber-600/20 via-transparent to-transparent",
+            glow: "bg-amber-500/10",
+            border: "border-amber-500/20",
+            topAccent: "from-amber-500 to-orange-500",
+          },
+          {
+            label: "Total MRR", value: "₹34.6K",
+            icon: IndianRupee, color: "text-cyan-300",
+            iconBg: "bg-cyan-500/20 border border-cyan-500/30",
+            gradient: "from-cyan-600/20 via-transparent to-transparent",
+            glow: "bg-cyan-500/10",
+            border: "border-cyan-500/20",
+            topAccent: "from-cyan-500 to-sky-500",
+          },
+        ].map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <motion.div
+              key={stat.label}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.06 }}
+              className={`relative overflow-hidden p-4 bg-card border ${stat.border} rounded-2xl flex items-center gap-3`}
+            >
+              {/* Top accent bar */}
+              <div className={`absolute top-0 left-0 right-0 h-[3px] ${stat.topAccent} rounded-t-2xl pointer-events-none`} />
+              {/* Gradient tint */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} pointer-events-none`} />
+              {/* Glow orb */}
+              <div className={`absolute -bottom-4 -right-4 w-20 h-20 ${stat.glow} rounded-full blur-2xl pointer-events-none`} />
+              <div className={`relative z-10 w-10 h-10 rounded-xl ${stat.iconBg} flex items-center justify-center shrink-0`}>
+                <Icon className={`w-5 h-5 ${stat.color}`} />
+              </div>
+              <div className="relative z-10">
+                <div className="text-2xl font-black text-white">{stat.value}</div>
+                <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">{stat.label}</div>
+              </div>
+            </motion.div>
+          );
+        })}
       </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="bg-card border border-border rounded-xl overflow-hidden"
+        className="relative bg-card border border-violet-500/20 rounded-2xl overflow-hidden animate-fadeIn"
       >
-        <table className="w-full">
-          <thead className="bg-muted/30 border-b border-border">
-            <tr>
-              <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                Customer
-              </th>
-              <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                Plan
-              </th>
-              <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                MRR
-              </th>
-              <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                Status
-              </th>
-              <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                Joined
-              </th>
-              <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground text-right">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {customersList.map((customer, index) => (
-              <motion.tr
-                key={customer.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4 + index * 0.1 }}
-                className="border-b border-border hover:bg-muted/30 transition-colors group"
-              >
-                <td className="py-4 px-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary-dark/20 rounded-full flex items-center justify-center">
-                      <Users className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <div className="font-medium">{customer.name}</div>
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
-                        <Mail className="w-3 h-3" />
-                        {customer.email}
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 rounded-t-2xl pointer-events-none z-10" />
+        {/* Gradient tint */}
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-600/8 via-transparent to-indigo-600/5 pointer-events-none" />
+        {/* Glow orb */}
+        <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-white/[0.01] border-b border-white/[0.04]">
+              <tr>
+                <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
+                  Customer
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
+                  Plan
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
+                  MRR
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
+                  Status
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
+                  Joined
+                </th>
+                <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground text-right">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {customersList.map((customer, index) => (
+                <motion.tr
+                  key={customer.id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 + index * 0.1 }}
+                  className="border-b border-border hover:bg-muted/30 transition-colors group"
+                >
+                  <td className="py-4 px-6">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary-dark/20 rounded-full flex items-center justify-center">
+                        <Users className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="font-medium">{customer.name}</div>
+                        <div className="text-sm text-muted-foreground flex items-center gap-1">
+                          <Mail className="w-3 h-3" />
+                          {customer.email}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </td>
-                <td className="py-4 px-6">
-                  <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded">
-                    {customer.plan}
-                  </span>
-                </td>
-                <td className="py-4 px-6 font-medium">{customer.mrr}</td>
-                <td className="py-4 px-6">
-                  <span
-                    className={`px-2 py-1 text-xs rounded capitalize ${
-                      customer.status === "active"
+                  </td>
+                  <td className="py-4 px-6">
+                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded">
+                      {customer.plan}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 font-medium">{customer.mrr}</td>
+                  <td className="py-4 px-6">
+                    <span
+                      className={`px-2 py-1 text-xs rounded capitalize ${customer.status === "active"
                         ? "bg-success/10 text-success"
                         : customer.status === "trial"
-                        ? "bg-warning/10 text-warning"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {customer.status}
-                  </span>
-                </td>
-                <td className="py-4 px-6 text-muted-foreground">{customer.joined}</td>
-                <td className="py-4 px-6 text-right">
-                  <div className="relative inline-block">
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setShowMenu(showMenu === customer.id ? null : customer.id)}
-                      className="p-2 hover:bg-muted rounded-lg transition-colors"
+                          ? "bg-warning/10 text-warning"
+                          : "bg-muted text-muted-foreground"
+                        }`}
                     >
-                      <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                    </motion.button>
-                    <AnimatePresence>
-                      {showMenu === customer.id && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                          className="absolute right-0 mt-2 w-40 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden text-left"
-                        >
-                          <button className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2">
-                            <Edit className="w-4 h-4" />
-                            <span>Edit</span>
-                          </button>
-                          <button className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2 text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                            <span>Delete</span>
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
+                      {customer.status}
+                    </span>
+                  </td>
+                  <td className="py-4 px-6 text-muted-foreground">{customer.joined}</td>
+                  <td className="py-4 px-6 text-right">
+                    <div className="relative inline-block">
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setShowMenu(showMenu === customer.id ? null : customer.id)}
+                        className="p-2 hover:bg-muted rounded-lg transition-colors"
+                      >
+                        <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                      </motion.button>
+                      <AnimatePresence>
+                        {showMenu === customer.id && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            className="absolute right-0 mt-2 w-40 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden text-left"
+                          >
+                            <button className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2">
+                              <Edit className="w-4 h-4" />
+                              <span>Edit</span>
+                            </button>
+                            <button className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2 text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                              <span>Delete</span>
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </motion.div>
     </motion.div>
   );

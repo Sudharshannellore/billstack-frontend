@@ -19,7 +19,7 @@ const navItems: NavItem[] = [
   { label: "Plan Templates", path: "/super-admin/templates", icon: FileText },
   { label: "Revenue", path: "/super-admin/revenue", icon: DollarSign },
   { label: "Monitoring", path: "/super-admin/monitoring", icon: Activity },
-  { label: "Audit Logs", path: "/super-admin/audit", icon: FileSearch },
+  { label: "Audit Logs", path: "/super-admin/audit-logs", icon: FileSearch },
   { label: "Settings", path: "/super-admin/settings", icon: Settings },
 ];
 

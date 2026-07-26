@@ -75,33 +75,47 @@ export function SuperAdminSettings() {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Sidebar Navigation */}
         <div className="lg:w-56 shrink-0">
-          <nav className="space-y-1 bg-card border border-white/[0.06] rounded-2xl p-2">
-            {tabs.map(tab => {
-              const Icon = tab.icon;
-              const active = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-                    active
-                      ? "bg-primary/10 text-primary border border-primary/20"
-                      : "text-muted-foreground hover:text-white hover:bg-white/[0.03]"
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
-                  {active && <ChevronRight className="w-3.5 h-3.5 ml-auto" />}
-                </button>
-              );
-            })}
+          <nav className="relative overflow-hidden space-y-1 bg-card border border-violet-500/20 rounded-2xl p-2">
+            {/* Top accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 to-purple-500 rounded-t-2xl pointer-events-none z-10" />
+            {/* Gradient tint */}
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-600/8 via-transparent to-transparent pointer-events-none" />
+
+            <div className="relative z-10 space-y-1">
+              {tabs.map(tab => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                      active
+                        ? "bg-primary/10 text-primary border border-primary/20"
+                        : "text-muted-foreground hover:text-white hover:bg-white/[0.03]"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{tab.label}</span>
+                    {active && <ChevronRight className="w-3.5 h-3.5 ml-auto" />}
+                  </button>
+                );
+              })}
+            </div>
           </nav>
         </div>
 
-        {/* Content Panel */}
-        <div className="flex-1 bg-card border border-white/[0.06] rounded-2xl p-6 space-y-6">
-          {activeTab === "general" && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+        <div className="relative overflow-hidden flex-1 bg-card border border-purple-500/20 rounded-2xl p-6 space-y-6">
+          {/* Top accent bar */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 rounded-t-2xl pointer-events-none z-10" />
+          {/* Gradient tint */}
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-600/8 via-transparent to-indigo-600/5 pointer-events-none" />
+          {/* Glow orb */}
+          <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 space-y-6">
+            {activeTab === "general" && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               <div>
                 <h2 className="text-base font-bold text-white mb-1">Platform Configuration</h2>
                 <p className="text-xs text-muted-foreground">Core billing and tenant management settings.</p>
@@ -269,6 +283,7 @@ export function SuperAdminSettings() {
               <Save className="w-4 h-4" />
               {saved ? "Saved!" : "Save Changes"}
             </motion.button>
+          </div>
           </div>
         </div>
       </div>

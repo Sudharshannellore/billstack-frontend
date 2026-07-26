@@ -147,6 +147,28 @@ export function Products() {
     }
   };
 
+  const getProductStyles = (style: BillingStyle) => {
+    let color = "purple";
+    if (style === "usage") color = "amber";
+    else if (style === "credits") color = "emerald";
+    else if (style === "telecom") color = "cyan";
+
+    const accentMap: Record<string, string> = {
+      purple:  "from-purple-500 to-violet-500",
+      emerald: "from-emerald-500 to-teal-500",
+      amber:   "from-amber-500 to-orange-500",
+      cyan:    "from-cyan-500 to-sky-500",
+    };
+
+    return {
+      border: `border-${color}-500/20 hover:border-${color}-500/40`,
+      glow: `hover:shadow-${color}-500/10`,
+      bgClass: `bg-gradient-to-br from-${color}-500/10 via-[#0b0b0f] to-${color}-500/5`,
+      bgGlow: `from-${color}-500/15 via-transparent to-transparent`,
+      topAccent: accentMap[color] || "from-violet-500 to-purple-500",
+    };
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0 }} 
@@ -173,17 +195,26 @@ export function Products() {
       {/* Grid of products */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AnimatePresence>
-          {products.map((product) => (
-            <motion.div
-              key={product.id}
-              layout
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              whileHover={{ y: -4, borderColor: "rgba(255, 255, 255, 0.12)" }}
-              className="bg-card border border-white/[0.06] rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between h-[210px] relative group"
-            >
-              <div>
+          {products.map((product) => {
+            const styles = getProductStyles(product.billingStyle);
+            return (
+              <motion.div
+                key={product.id}
+                layout
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                whileHover={{ y: -4 }}
+                className={`relative overflow-hidden ${styles.bgClass} border ${styles.border} hover:shadow-xl ${styles.glow} rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between h-[210px] group`}
+              >
+                {/* Top accent bar */}
+                <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${styles.topAccent} rounded-t-2xl pointer-events-none`} />
+                {/* Gradient tint */}
+                <div className={`absolute inset-0 bg-gradient-to-br ${styles.bgGlow} opacity-30 pointer-events-none`} />
+                {/* Glow orb */}
+                <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+                
+                <div className="relative z-10 w-full">
                 <div className="flex items-start justify-between mb-3">
                   <span className={cn(
                     "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
@@ -237,9 +268,10 @@ export function Products() {
                 <div className="text-muted-foreground">
                   <span className="text-white font-bold">{product.customers}</span> subscribers
                 </div>
-              </div>
-            </motion.div>
-          ))}
+                </div>
+              </motion.div>
+            );
+          })}
         </AnimatePresence>
       </div>
 

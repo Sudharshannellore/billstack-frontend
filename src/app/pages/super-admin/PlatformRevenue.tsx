@@ -32,10 +32,10 @@ const topTenants = [
 ];
 
 const kpis = [
-  { label: "Platform Revenue", value: "$285K", trend: "+18.3%", up: true, icon: DollarSign, color: "primary", glow: "primary/20" },
-  { label: "Commission Earned", value: "$28.5K", trend: "+18.3%", up: true, icon: Percent, color: "violet-400", glow: "violet-500/20" },
-  { label: "Active Tenants", value: "38", trend: "+4", up: true, icon: Building2, color: "cyan-400", glow: "cyan-500/20" },
-  { label: "Avg Commission Rate", value: "10%", trend: "Stable", up: null, icon: TrendingUp, color: "emerald-400", glow: "emerald-500/20" },
+  { label: "Platform Revenue",    value: "$285K",  trend: "+18.3%", up: true,  icon: DollarSign, color: "primary",    glow: "primary/20",      topAccent: "from-violet-500 to-purple-500",  border: "border-violet-500/20",  bgGrad: "from-violet-600/15 via-transparent to-transparent" },
+  { label: "Commission Earned",   value: "$28.5K", trend: "+18.3%", up: true,  icon: Percent,    color: "violet-400", glow: "violet-500/20",   topAccent: "from-purple-500 to-indigo-500",  border: "border-purple-500/20",  bgGrad: "from-purple-600/15 via-transparent to-transparent" },
+  { label: "Active Tenants",      value: "38",     trend: "+4",     up: true,  icon: Building2,  color: "cyan-400",   glow: "cyan-500/20",    topAccent: "from-cyan-500 to-sky-500",       border: "border-cyan-500/20",    bgGrad: "from-cyan-600/15 via-transparent to-transparent" },
+  { label: "Avg Commission Rate", value: "10%",    trend: "Stable", up: null,  icon: TrendingUp, color: "emerald-400",glow: "emerald-500/20", topAccent: "from-emerald-500 to-teal-500",   border: "border-emerald-500/20", bgGrad: "from-emerald-600/15 via-transparent to-transparent" },
 ];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -94,15 +94,20 @@ export function PlatformRevenue() {
         {kpis.map((kpi, i) => {
           const Icon = kpi.icon;
           return (
-            <motion.div
+          <motion.div
               key={kpi.label}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.07 }}
-              className="relative p-5 bg-card border border-white/[0.06] rounded-2xl overflow-hidden hover:border-white/[0.12] transition-all duration-300 group"
+              className={`relative p-5 bg-card border ${kpi.border} rounded-2xl overflow-hidden transition-all duration-300 group`}
             >
+              {/* Top accent bar */}
+              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${kpi.topAccent} rounded-t-2xl pointer-events-none`} />
+              {/* Gradient tint */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${kpi.bgGrad} pointer-events-none`} />
+              {/* Glow orb */}
               <div className={`absolute -bottom-4 -right-4 w-24 h-24 bg-${kpi.glow} rounded-full blur-xl opacity-40`} />
-              <div className="flex items-center justify-between mb-4">
+              <div className="relative z-10 flex items-center justify-between mb-4">
                 <div className={`w-9 h-9 rounded-xl bg-${kpi.color}/10 border border-${kpi.color}/20 flex items-center justify-center`}>
                   <Icon className={`w-4 h-4 text-${kpi.color}`} />
                 </div>
@@ -115,8 +120,8 @@ export function PlatformRevenue() {
                   {kpi.trend}
                 </div>
               </div>
-              <div className="text-2xl font-black text-white mb-0.5">{kpi.value}</div>
-              <div className="text-xs text-muted-foreground">{kpi.label}</div>
+              <div className="relative z-10 text-2xl font-black text-white mb-0.5">{kpi.value}</div>
+              <div className="relative z-10 text-xs text-muted-foreground">{kpi.label}</div>
             </motion.div>
           );
         })}
@@ -129,8 +134,14 @@ export function PlatformRevenue() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
-          className="lg:col-span-2 p-6 bg-card border border-white/[0.06] rounded-2xl"
+          className="relative lg:col-span-2 p-6 bg-card border border-violet-500/20 rounded-2xl overflow-hidden"
         >
+          {/* Top accent bar */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-500 to-cyan-500 rounded-t-2xl pointer-events-none" />
+          {/* Gradient tint */}
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 via-transparent to-cyan-600/5 pointer-events-none" />
+          {/* Glow orb */}
+          <div className="absolute -top-6 -right-6 w-36 h-36 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-sm font-bold text-white">Revenue Trend</h3>
@@ -169,8 +180,14 @@ export function PlatformRevenue() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="p-6 bg-card border border-white/[0.06] rounded-2xl"
+          className="relative p-6 bg-card border border-indigo-500/20 rounded-2xl overflow-hidden"
         >
+          {/* Top accent bar */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-indigo-500 to-violet-500 rounded-t-2xl pointer-events-none" />
+          {/* Gradient tint */}
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-transparent to-transparent pointer-events-none" />
+          {/* Glow orb */}
+          <div className="absolute -bottom-8 -right-8 w-36 h-36 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
           <h3 className="text-sm font-bold text-white mb-5">Top Revenue Tenants</h3>
           <div className="space-y-4">
             {topTenants.map((t, i) => {

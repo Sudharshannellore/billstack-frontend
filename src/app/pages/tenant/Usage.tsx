@@ -199,138 +199,156 @@ export function Usage() {
       {/* Main chart section */}
       <motion.div
         layout
-        className="p-6 bg-card border border-white/[0.06] rounded-2xl space-y-6"
+        className="relative p-6 bg-card border border-violet-500/20 rounded-2xl space-y-6 overflow-hidden"
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-bold text-white flex items-center gap-2">
-              <span>{currentDetails.title}</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/5 text-muted-foreground border border-white/[0.08] font-light">
-                {currentDetails.total}
-              </span>
-            </h3>
-            <p className="text-xs text-muted-foreground font-light mt-0.5">Ingestion intervals aggregated by day.</p>
-          </div>
-          <span className="text-xs font-semibold text-muted-foreground">{currentDetails.quota}</span>
-        </div>
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 rounded-t-2xl pointer-events-none" />
+        {/* Gradient tint */}
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-600/8 via-transparent to-indigo-600/5 pointer-events-none" />
+        {/* Glow orb */}
+        <div className="absolute -bottom-10 -right-10 w-56 h-56 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
 
-        <ResponsiveContainer width="100%" height={320}>
-          <AreaChart data={usageHistory}>
-            <defs>
-              <linearGradient id="usageGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={currentDetails.color} stopOpacity={0.2}/>
-                <stop offset="95%" stopColor={currentDetails.color} stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-            <XAxis dataKey="date" stroke="#71717A" fontSize={11} tickLine={false} />
-            <YAxis stroke="#71717A" fontSize={11} tickLine={false} />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: "#0B0B0F", 
-                border: "1px solid rgba(255,255,255,0.08)", 
-                borderRadius: "12px",
-                fontSize: 12
-              }} 
-            />
-            <Area 
-              type="monotone" 
-              dataKey={selectedMetric} 
-              stroke={currentDetails.color} 
-              strokeWidth={2.5} 
-              fillOpacity={1} 
-              fill="url(#usageGradient)" 
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <div className="relative z-10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <span>{currentDetails.title}</span>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/5 text-muted-foreground border border-white/[0.08] font-light">
+                  {currentDetails.total}
+                </span>
+              </h3>
+              <p className="text-xs text-muted-foreground font-light mt-0.5">Ingestion intervals aggregated by day.</p>
+            </div>
+            <span className="text-xs font-semibold text-muted-foreground">{currentDetails.quota}</span>
+          </div>
+
+          <ResponsiveContainer width="100%" height={320}>
+            <AreaChart data={usageHistory}>
+              <defs>
+                <linearGradient id="usageGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={currentDetails.color} stopOpacity={0.2}/>
+                  <stop offset="95%" stopColor={currentDetails.color} stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+              <XAxis dataKey="date" stroke="#71717A" fontSize={11} tickLine={false} />
+              <YAxis stroke="#71717A" fontSize={11} tickLine={false} />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: "#0B0B0F", 
+                  border: "1px solid rgba(255,255,255,0.08)", 
+                  borderRadius: "12px",
+                  fontSize: 12
+                }} 
+              />
+              <Area 
+                type="monotone" 
+                dataKey={selectedMetric} 
+                stroke={currentDetails.color} 
+                strokeWidth={2.5} 
+                fillOpacity={1} 
+                fill="url(#usageGradient)" 
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
       </motion.div>
 
       {/* Real-time Ingestion Logs Feed */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card border border-white/[0.06] rounded-2xl p-6"
+        className="relative bg-card border border-emerald-500/20 rounded-2xl p-6 overflow-hidden"
       >
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <div>
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Terminal className="w-5 h-5 text-primary" />
-                <span>Live Event Ingestion Stream</span>
-              </h3>
-              <p className="text-xs text-muted-foreground font-light mt-0.5">Real-time usage API payload logs routed to the billing coordinator.</p>
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-t-2xl pointer-events-none" />
+        {/* Gradient tint */}
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/8 via-transparent to-teal-600/5 pointer-events-none" />
+        {/* Glow orb */}
+        <div className="absolute -bottom-10 -right-10 w-56 h-56 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Terminal className="w-5 h-5 text-emerald-400" />
+                  <span>Live Event Ingestion Stream</span>
+                </h3>
+                <p className="text-xs text-muted-foreground font-light mt-0.5">Real-time usage API payload logs routed to the billing coordinator.</p>
+              </div>
             </div>
+
+            <button 
+              onClick={() => setIsLive(!isLive)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
+                isLive 
+                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
+                  : "bg-white/5 border-white/[0.08] text-muted-foreground"
+              }`}
+            >
+              {isLive ? (
+                <>
+                  <Pause className="w-3.5 h-3.5" />
+                  <span>Pause Stream</span>
+                </>
+              ) : (
+                <>
+                  <Play className="w-3.5 h-3.5" />
+                  <span>Resume Stream</span>
+                </>
+              )}
+            </button>
           </div>
 
-          <button 
-            onClick={() => setIsLive(!isLive)}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
-              isLive 
-                ? "bg-primary/10 border-primary/20 text-primary" 
-                : "bg-white/5 border-white/[0.08] text-muted-foreground"
-            }`}
-          >
-            {isLive ? (
-              <>
-                <Pause className="w-3.5 h-3.5" />
-                <span>Pause Stream</span>
-              </>
-            ) : (
-              <>
-                <Play className="w-3.5 h-3.5" />
-                <span>Resume Stream</span>
-              </>
-            )}
-          </button>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/[0.06] text-left text-xs font-semibold text-muted-foreground">
-                <th className="pb-3 pl-4">Event ID</th>
-                <th className="pb-3">Event Name</th>
-                <th className="pb-3">Customer</th>
-                <th className="pb-3">Value</th>
-                <th className="pb-3">Time</th>
-                <th className="pb-3 pr-4">Response</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/[0.02]">
-              <AnimatePresence initial={false}>
-                {events.map((event) => (
-                  <motion.tr 
-                    key={event.id}
-                    layoutId={event.id}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    className="hover:bg-white/[0.01] transition-colors text-xs text-white font-medium"
-                  >
-                    <td className="py-4 pl-4 font-mono text-muted-foreground">{event.id}</td>
-                    <td className="py-4">
-                      <span className="font-semibold text-white bg-white/[0.02] border border-white/[0.05] px-2 py-0.5 rounded-md font-mono">
-                        {event.event}
-                      </span>
-                    </td>
-                    <td className="py-4">{event.customer}</td>
-                    <td className="py-4 font-bold">{event.units} units</td>
-                    <td className="py-4 text-muted-foreground">{event.time}</td>
-                    <td className="py-4 pr-4">
-                      <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                        event.status === "success" 
-                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
-                          : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                      }`}>
-                        {event.status === "success" ? <CheckCircle className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
-                        <span>{event.status === "success" ? "200 OK" : "400 BAD"}</span>
-                      </span>
-                    </td>
-                  </motion.tr>
-                ))}
-              </AnimatePresence>
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-white/[0.06] text-left text-xs font-semibold text-muted-foreground">
+                  <th className="pb-3 pl-4">Event ID</th>
+                  <th className="pb-3">Event Name</th>
+                  <th className="pb-3">Customer</th>
+                  <th className="pb-3">Value</th>
+                  <th className="pb-3">Time</th>
+                  <th className="pb-3 pr-4">Response</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.02]">
+                <AnimatePresence initial={false}>
+                  {events.map((event) => (
+                    <motion.tr 
+                      key={event.id}
+                      layoutId={event.id}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="hover:bg-white/[0.01] transition-colors text-xs text-white font-medium"
+                    >
+                      <td className="py-4 pl-4 font-mono text-muted-foreground">{event.id}</td>
+                      <td className="py-4">
+                        <span className="font-semibold text-white bg-white/[0.02] border border-white/[0.05] px-2 py-0.5 rounded-md font-mono">
+                          {event.event}
+                        </span>
+                      </td>
+                      <td className="py-4">{event.customer}</td>
+                      <td className="py-4 font-bold">{event.units} units</td>
+                      <td className="py-4 text-muted-foreground">{event.time}</td>
+                      <td className="py-4 pr-4">
+                        <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                          event.status === "success" 
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                            : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
+                        }`}>
+                          {event.status === "success" ? <CheckCircle className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+                          <span>{event.status === "success" ? "200 OK" : "400 BAD"}</span>
+                        </span>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </div>
         </div>
       </motion.div>
 

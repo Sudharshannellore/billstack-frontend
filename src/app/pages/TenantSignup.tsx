@@ -87,7 +87,7 @@ export function TenantSignup() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-card border border-white/[0.06] rounded-3xl p-8 shadow-2xl relative"
+          className="bg-card border rounded-3xl p-8 shadow-2xl relative"
         >
           {/* Branded Logo */}
           <div className="flex items-center gap-2.5 mb-8">

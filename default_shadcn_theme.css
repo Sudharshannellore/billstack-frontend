@@ -118,3 +118,51 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 }
+
+/* Global premium glassmorphic colorful styles for cards */
+.bg-card {
+  position: relative !important;
+  overflow: hidden !important;
+  background-image: linear-gradient(to bottom right, rgba(139, 92, 246, 0.06), #0b0b0f 75%, rgba(99, 102, 241, 0.03)) !important;
+  background-color: transparent !important;
+  border-color: rgba(139, 92, 246, 0.15) !important;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.03) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.bg-card:hover {
+  border-color: rgba(139, 92, 246, 0.3) !important;
+  box-shadow: 0 10px 40px rgba(139, 92, 246, 0.05), inset 0 1px 1px rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Glowing top border accent */
+.bg-card::before {
+  content: "" !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  height: 3px !important;
+  background: linear-gradient(to right, #8b5cf6, #6366f1) !important;
+  border-top-left-radius: inherit !important;
+  border-top-right-radius: inherit !important;
+  pointer-events: none !important;
+  z-index: 10 !important;
+}
+
+/* Background radial glow orb */
+.bg-card::after {
+  content: "" !important;
+  position: absolute !important;
+  bottom: -40px !important;
+  right: -40px !important;
+  width: 140px !important;
+  height: 140px !important;
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.12) 0%, rgba(99, 102, 241, 0) 70%) !important;
+  border-radius: 50% !important;
+  filter: blur(25px) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+

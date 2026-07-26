@@ -151,8 +151,14 @@ export function SuperAdminDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="p-6 bg-card border border-white/[0.06] rounded-2xl flex flex-col justify-between"
+          className="relative p-6 bg-card border border-violet-500/20 rounded-2xl flex flex-col justify-between overflow-hidden"
         >
+          {/* Top accent bar */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 to-purple-500 rounded-t-2xl pointer-events-none" />
+          {/* Gradient tint */}
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 via-transparent to-transparent pointer-events-none" />
+          {/* Glow orb */}
+          <div className="absolute -top-6 -right-6 w-32 h-32 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="mb-6">
             <h3 className="text-lg font-bold text-white">Aggregated Platform MRR</h3>
             <p className="text-xs text-muted-foreground font-light mt-0.5">Aggregated billing payouts across all isolated client databases.</p>
@@ -196,8 +202,14 @@ export function SuperAdminDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="p-6 bg-card border border-white/[0.06] rounded-2xl flex flex-col justify-between"
+          className="relative p-6 bg-card border border-indigo-500/20 rounded-2xl flex flex-col justify-between overflow-hidden"
         >
+          {/* Top accent bar */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-indigo-500 to-violet-500 rounded-t-2xl pointer-events-none" />
+          {/* Gradient tint */}
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-transparent to-transparent pointer-events-none" />
+          {/* Glow orb */}
+          <div className="absolute -top-6 -right-6 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="mb-6">
             <h3 className="text-lg font-bold text-white">Top Tenant Volume</h3>
             <p className="text-xs text-muted-foreground font-light mt-0.5">Top-earning companies utilizing the active API gateway.</p>
@@ -229,8 +241,14 @@ export function SuperAdminDashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
-        className="p-6 bg-card border border-white/[0.06] rounded-2xl"
+        className="relative p-6 bg-card border border-purple-500/20 rounded-2xl overflow-hidden"
       >
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 rounded-t-2xl pointer-events-none" />
+        {/* Gradient tint */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/8 via-transparent to-indigo-600/5 pointer-events-none" />
+        {/* Glow orb */}
+        <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-lg font-bold text-white flex items-center gap-2">

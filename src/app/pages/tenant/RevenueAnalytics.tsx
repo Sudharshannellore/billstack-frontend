@@ -104,8 +104,12 @@ export function RevenueAnalytics() {
             change: "+14.2%",
             isPositive: true,
             icon: IndianRupee,
-            gradient: "from-primary/10 to-violet-500/5",
-            sparkData: [4, 6, 5, 8, 7, 9, 10]
+            gradient: "from-violet-600/20 via-transparent to-transparent",
+            glow: "bg-violet-500/10",
+            border: "border-violet-500/20",
+            topAccent: "from-violet-500 to-purple-500",
+            iconColor: "text-violet-300",
+            iconBg: "bg-violet-500/20 border border-violet-500/30",
           },
           {
             title: "Net Income",
@@ -113,8 +117,12 @@ export function RevenueAnalytics() {
             change: "+16.8%",
             isPositive: true,
             icon: ArrowUpRight,
-            gradient: "from-emerald-500/10 to-teal-500/5",
-            sparkData: [3, 5, 4, 7, 6, 8, 9]
+            gradient: "from-emerald-600/20 via-transparent to-transparent",
+            glow: "bg-emerald-500/10",
+            border: "border-emerald-500/20",
+            topAccent: "from-emerald-500 to-teal-500",
+            iconColor: "text-emerald-300",
+            iconBg: "bg-emerald-500/20 border border-emerald-500/30",
           },
           {
             title: "Average LTV",
@@ -122,8 +130,12 @@ export function RevenueAnalytics() {
             change: "-2.4%",
             isPositive: false,
             icon: Layers,
-            gradient: "from-blue-500/10 to-indigo-500/5",
-            sparkData: [8, 9, 8, 7, 8, 7, 6]
+            gradient: "from-cyan-600/20 via-transparent to-transparent",
+            glow: "bg-cyan-500/10",
+            border: "border-cyan-500/20",
+            topAccent: "from-cyan-500 to-sky-500",
+            iconColor: "text-cyan-300",
+            iconBg: "bg-cyan-500/20 border border-cyan-500/30",
           },
           {
             title: "Revenue Churn",
@@ -131,8 +143,12 @@ export function RevenueAnalytics() {
             change: "-0.4%",
             isPositive: true, // Lower churn is positive
             icon: Percent,
-            gradient: "from-rose-500/10 to-red-500/5",
-            sparkData: [5, 4, 4, 3, 3, 2, 2]
+            gradient: "from-rose-600/20 via-transparent to-transparent",
+            glow: "bg-rose-500/10",
+            border: "border-rose-500/20",
+            topAccent: "from-rose-500 to-pink-500",
+            iconColor: "text-rose-300",
+            iconBg: "bg-rose-500/20 border border-rose-500/30",
           }
         ].map((card, idx) => {
           const Icon = card.icon;
@@ -142,16 +158,20 @@ export function RevenueAnalytics() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
-              whileHover={{ y: -4, borderColor: "rgba(255, 255, 255, 0.15)" }}
-              className="relative overflow-hidden bg-card border border-white/[0.06] rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between h-[150px]"
+              whileHover={{ y: -4 }}
+              className={`relative overflow-hidden bg-card border ${card.border} rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between h-[150px]`}
             >
+              {/* Top accent bar */}
+              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${card.topAccent} rounded-t-2xl pointer-events-none`} />
               {/* Gradient card tint */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-40 pointer-events-none`} />
+              <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} pointer-events-none`} />
+              {/* Glow orb */}
+              <div className={`absolute -bottom-4 -right-4 w-20 h-20 ${card.glow} rounded-full blur-2xl pointer-events-none`} />
 
               <div className="relative z-10 flex items-center justify-between">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{card.title}</span>
-                <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/[0.08] flex items-center justify-center">
-                  <Icon className="w-4 h-4 text-white" />
+                <div className={`w-8 h-8 rounded-lg ${card.iconBg} flex items-center justify-center`}>
+                  <Icon className={`w-4 h-4 ${card.iconColor}`} />
                 </div>
               </div>
 
@@ -184,8 +204,16 @@ export function RevenueAnalytics() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="lg:col-span-8 bg-card border border-white/[0.06] rounded-2xl p-6 flex flex-col justify-between"
+          className="relative lg:col-span-8 bg-card border border-violet-500/20 rounded-2xl p-6 flex flex-col justify-between overflow-hidden"
         >
+          {/* Top accent bar */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 to-purple-500 rounded-t-2xl pointer-events-none z-10" />
+          {/* Gradient tint */}
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 via-transparent to-transparent pointer-events-none" />
+          {/* Glow orb */}
+          <div className="absolute -top-6 -right-6 w-36 h-36 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10 w-full h-full flex flex-col justify-between">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <div>
               <h3 className="text-lg font-bold text-white">Revenue Performance Over Time</h3>
@@ -250,6 +278,7 @@ export function RevenueAnalytics() {
               )}
             </AreaChart>
           </ResponsiveContainer>
+          </div>
         </motion.div>
 
         {/* Plan Share breakdown (Pie Chart) */}
@@ -257,8 +286,16 @@ export function RevenueAnalytics() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="lg:col-span-4 bg-card border border-white/[0.06] rounded-2xl p-6 flex flex-col justify-between"
+          className="relative lg:col-span-4 bg-card border border-cyan-500/20 rounded-2xl p-6 flex flex-col justify-between overflow-hidden"
         >
+          {/* Top accent bar */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-500 to-sky-500 rounded-t-2xl pointer-events-none z-10" />
+          {/* Gradient tint */}
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/10 via-transparent to-transparent pointer-events-none" />
+          {/* Glow orb */}
+          <div className="absolute -bottom-8 -right-8 w-36 h-36 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10 w-full h-full flex flex-col justify-between">
           <div>
             <h3 className="text-lg font-bold text-white">Revenue Share</h3>
             <p className="text-xs text-muted-foreground font-light mt-0.5">Top-earning products & models this month.</p>
@@ -304,6 +341,7 @@ export function RevenueAnalytics() {
               </div>
             ))}
           </div>
+          </div>
         </motion.div>
       </div>
 
@@ -312,8 +350,16 @@ export function RevenueAnalytics() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="bg-card border border-white/[0.06] rounded-2xl p-6"
+        className="relative bg-card border border-emerald-500/20 rounded-2xl p-6 overflow-hidden"
       >
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-500 rounded-t-2xl pointer-events-none z-10" />
+        {/* Gradient tint */}
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/8 via-transparent to-transparent pointer-events-none" />
+        {/* Glow orb */}
+        <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-lg font-bold text-white font-sans">Recent Billing Transactions</h3>
@@ -367,6 +413,7 @@ export function RevenueAnalytics() {
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       </motion.div>
 

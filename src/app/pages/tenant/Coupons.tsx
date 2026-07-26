@@ -462,10 +462,18 @@ export function Coupons() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-card border border-border rounded-xl overflow-hidden"
+        className="relative bg-card border border-violet-500/20 rounded-2xl overflow-hidden"
       >
-        <table className="w-full">
-          <thead className="bg-muted/30 border-b border-border">
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 rounded-t-2xl pointer-events-none z-10" />
+        {/* Gradient tint */}
+        <div className="absolute inset-0 bg-gradient-to-br from-violet-600/8 via-transparent to-indigo-600/5 pointer-events-none" />
+        {/* Glow orb */}
+        <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-white/[0.01] border-b border-white/[0.04]">
             <tr>
               <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
                 Campaign
@@ -557,6 +565,7 @@ export function Coupons() {
             ))}
           </tbody>
         </table>
+        </div>
       </motion.div>
     </motion.div>
   );

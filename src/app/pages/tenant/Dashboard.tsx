@@ -138,13 +138,20 @@ export function TenantDashboard() {
       {/* Charts Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
         
-        {/* Main Revenue Overtime (Area Chart) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="lg:col-span-8 p-6 bg-card border border-white/[0.06] rounded-2xl flex flex-col justify-between"
+          className="relative lg:col-span-8 p-6 bg-card border border-violet-500/20 rounded-2xl flex flex-col justify-between overflow-hidden"
         >
+          {/* Top accent bar */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 to-purple-500 rounded-t-2xl pointer-events-none" />
+          {/* Gradient tint */}
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 via-transparent to-transparent pointer-events-none" />
+          {/* Glow orb */}
+          <div className="absolute -top-6 -right-6 w-32 h-32 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col justify-between h-full w-full">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-lg font-bold text-white">Revenue Operations Overview</h3>
@@ -194,6 +201,7 @@ export function TenantDashboard() {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+          </div>
         </motion.div>
 
         {/* Plan Share (Pie Chart) */}
@@ -201,8 +209,16 @@ export function TenantDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="lg:col-span-4 p-6 bg-card border border-white/[0.06] rounded-2xl flex flex-col justify-between"
+          className="relative lg:col-span-4 p-6 bg-card border border-cyan-500/20 rounded-2xl flex flex-col justify-between overflow-hidden"
         >
+          {/* Top accent bar */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-500 to-sky-500 rounded-t-2xl pointer-events-none" />
+          {/* Gradient tint */}
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/10 via-transparent to-transparent pointer-events-none" />
+          {/* Glow orb */}
+          <div className="absolute -top-6 -right-6 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+          
+          <div className="relative z-10 flex flex-col justify-between h-full w-full">
           <div>
             <h3 className="text-lg font-bold text-white">Active Plan Share</h3>
             <p className="text-xs text-muted-foreground font-light mt-0.5">Allocation by subscriber contracts.</p>
@@ -246,16 +262,24 @@ export function TenantDashboard() {
               </div>
             ))}
           </div>
+          </div>
         </motion.div>
       </div>
 
-      {/* Recent Subscriptions Audit log */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
-        className="p-6 bg-card border border-white/[0.06] rounded-2xl"
+        className="relative p-6 bg-card border border-emerald-500/20 rounded-2xl overflow-hidden"
       >
+        {/* Top accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-500 rounded-t-2xl pointer-events-none" />
+        {/* Gradient tint */}
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/8 via-transparent to-transparent pointer-events-none" />
+        {/* Glow orb */}
+        <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+        
+        <div className="relative z-10">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-lg font-bold text-white">Recent Active Subscriptions</h3>
@@ -312,6 +336,7 @@ export function TenantDashboard() {
               ))}
             </tbody>
           </table>
+        </div>
         </div>
       </motion.div>
     </motion.div>
