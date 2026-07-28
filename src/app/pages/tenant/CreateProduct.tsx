@@ -22,17 +22,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
-import { BillingStyleSelector, BillingStyle } from "../../components/billing/BillingStyleSelector";
 import { cn } from "../../components/ui/utils";
 import { SUPPORTED_CURRENCIES } from "../../components/currency";
 
-const PRODUCT_STEPS = ["Identity", "Logic", "Publish"];
+const PRODUCT_STEPS = ["Identity", "Publish"];
 
 type ProductFormValues = {
   name: string;
   description: string;
   status: string;
-  billingStyle: BillingStyle;
   currency: string;
 };
 
@@ -50,7 +48,6 @@ export function CreateProduct({ onSuccess, onCancel }: CreateProductProps) {
       name: "",
       description: "",
       status: "active",
-      billingStyle: "subscription",
       currency: "INR",
     },
   });
@@ -59,10 +56,8 @@ export function CreateProduct({ onSuccess, onCancel }: CreateProductProps) {
     const values = form.getValues();
     switch (currentStep) {
       case 0:
-        return !!values.name && !!values.description;
+        return !!values.name && !!values.description && !!values.currency;
       case 1:
-        return !!values.billingStyle;
-      case 2:
         return true;
       default:
         return false;
@@ -170,86 +165,54 @@ export function CreateProduct({ onSuccess, onCancel }: CreateProductProps) {
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleProductSubmit)} className="space-y-8">
             <AnimatePresence mode="wait">
-              {currentStep === 0 && (
-                <motion.div
-                  key="step-0"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
-                >
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                      <Package className="w-5 h-5 sm:w-6 sm:h-6" />
-                    </div>
-                    <h2 className="text-xl sm:text-2xl font-bold italic underline decoration-primary/30 underline-offset-8">Product Identity</h2>
+            {currentStep === 0 && (
+              <motion.div
+                key="step-0"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Package className="w-5 h-5 sm:w-6 sm:h-6" />
                   </div>
+                  <h2 className="text-xl sm:text-2xl font-bold italic underline decoration-primary/30 underline-offset-8">Product Identity</h2>
+                </div>
 
-                  <div className="space-y-6 bg-card border border-border p-8 rounded-3xl shadow-sm">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      rules={{ required: true }}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-bold italic">Product Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Acme Database Storage API" className="h-12" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      rules={{ required: true }}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-bold italic">Description</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Explain what services, aggregates, or resource access this product configuration facilitates."
-                              className="min-h-[120px]"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </motion.div>
-              )}
-
-              {currentStep === 1 && (
-                <motion.div
-                  key="step-1"
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  className="space-y-6"
-                >
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                      <Package className="w-6 h-6" />
-                    </div>
-                    <h2 className="text-2xl font-bold italic underline decoration-primary/30 underline-offset-8">Billing Architecture Logic</h2>
-                  </div>
-
+                <div className="space-y-6 bg-card border border-border p-8 rounded-3xl shadow-sm">
                   <FormField
                     control={form.control}
-                    name="billingStyle"
+                    name="name"
+                    rules={{ required: true }}
                     render={({ field }) => (
                       <FormItem>
+                        <FormLabel className="text-sm font-bold italic">Product Name</FormLabel>
                         <FormControl>
-                          <BillingStyleSelector value={field.value} onChange={field.onChange} />
+                          <Input placeholder="Acme Database Storage API" className="h-12" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    rules={{ required: true }}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-bold italic">Description</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Explain what services, aggregates, or resource access this product configuration facilitates."
+                            className="min-h-[120px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                   <FormField
                     control={form.control}
                     name="currency"
@@ -274,35 +237,36 @@ export function CreateProduct({ onSuccess, onCancel }: CreateProductProps) {
                       </FormItem>
                     )}
                   />
-                </motion.div>
-              )}
+                </div>
+              </motion.div>
+            )}
 
-              {currentStep === 2 && (
-                <motion.div
-                  key="step-2"
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 1.02 }}
-                  className="space-y-8"
-                >
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                      <Check className="w-6 h-6" />
-                    </div>
-                    <h2 className="text-2xl font-bold italic underline decoration-primary/30 underline-offset-8">Review & Deploy</h2>
+            {currentStep === 1 && (
+              <motion.div
+                key="step-1"
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.02 }}
+                className="space-y-8"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Check className="w-6 h-6" />
                   </div>
+                  <h2 className="text-2xl font-bold italic underline decoration-primary/30 underline-offset-8">Review & Deploy</h2>
+                </div>
 
-                  <div className="text-center py-10 bg-card border border-border rounded-3xl shadow-sm space-y-4">
-                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
-                      <Check className="w-6 h-6 text-emerald-400" />
-                    </div>
-                    <h4 className="text-base font-extrabold">Ready to Deploy</h4>
-                    <p className="text-sm text-muted-foreground max-w-sm mx-auto font-light leading-relaxed">
-                      Confirming deployment for <span className="text-primary font-bold">{form.getValues("name")}</span> priced in <span className="text-primary font-bold">{form.getValues("currency")}</span>. New billing lines will immediately activate in Sandbox.
-                    </p>
+                <div className="text-center py-10 bg-card border border-border rounded-3xl shadow-sm space-y-4">
+                  <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto">
+                    <Check className="w-6 h-6 text-emerald-400" />
                   </div>
-                </motion.div>
-              )}
+                  <h4 className="text-base font-extrabold">Ready to Deploy</h4>
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto font-light leading-relaxed">
+                    Confirming deployment for <span className="text-primary font-bold">{form.getValues("name")}</span> priced in <span className="text-primary font-bold">{form.getValues("currency")}</span>. New billing lines will immediately activate in Sandbox.
+                  </p>
+                </div>
+              </motion.div>
+            )}
             </AnimatePresence>
 
             {/* Navigation Controls */}

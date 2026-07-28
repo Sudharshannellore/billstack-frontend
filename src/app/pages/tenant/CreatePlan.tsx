@@ -13,7 +13,7 @@ import {
   Coins,
   ListChecks,
 } from "lucide-react";
-import { BillingStyle } from "../../components/billing/BillingStyleSelector";
+import { BillingStyle, BillingStyleSelector } from "../../components/billing/BillingStyleSelector";
 import { MOCK_PRODUCTS } from "../../data/mock-plans";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
@@ -30,7 +30,7 @@ import { cn } from "../../components/ui/utils";
 import { getCardTheme } from "../../components/cardThemes";
 import { getCurrencySymbol } from "../../components/currency";
 
-const STEPS = ["Product", "Payment Type", "Configuration"];
+const STEPS = ["Product", "Billing Style", "Payment Type", "Configuration"];
 
 const PAYMENT_TYPES = [
   { id: "prepaid", label: "Prepaid", description: "Pay upfront before usage", icon: Coins },
@@ -156,8 +156,9 @@ export function CreatePlan({ onSuccess, onCancel, isEditing = false }: CreatePla
   const isStepValid = () => {
     switch (currentStep) {
       case 0: return !!formValues.productId;
-      case 1: return !!formValues.paymentType;
-      case 2:
+      case 1: return !!formValues.billingStyle;
+      case 2: return !!formValues.paymentType;
+      case 3:
         if (!formValues.name) return false;
         switch (formValues.billingStyle) {
           case "subscription": return !!formValues.price && !!formValues.billingCycle;
@@ -275,8 +276,7 @@ export function CreatePlan({ onSuccess, onCancel, isEditing = false }: CreatePla
                           ...prev,
                           productId: prod.id,
                           productName: prod.name,
-                          productCurrency: prod.currency ?? "INR",
-                          billingStyle: prod.billingStyle
+                          productCurrency: prod.currency ?? "INR"
                         }))}
                         className={cn(
                           "p-6 rounded-3xl border-2 cursor-pointer transition-all duration-300 flex items-center gap-5",
@@ -288,7 +288,6 @@ export function CreatePlan({ onSuccess, onCancel, isEditing = false }: CreatePla
                         </div>
                         <div>
                           <div className="font-bold text-lg">{prod.name}</div>
-                          <div className="text-xs font-black uppercase tracking-widest text-primary mb-1">{prod.billingStyle}</div>
                         </div>
                         {isSelected && <Check className="ml-auto w-6 h-6 text-primary" />}
                       </motion.div>
@@ -299,6 +298,28 @@ export function CreatePlan({ onSuccess, onCancel, isEditing = false }: CreatePla
             )}
 
             {currentStep === 1 && (
+              <motion.div
+                key="step-1"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                className="space-y-6"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                    <Zap className="w-6 h-6" />
+                  </div>
+                  <h2 className="text-2xl font-bold italic underline decoration-primary/30 underline-offset-8">Select Billing Style</h2>
+                </div>
+
+                <BillingStyleSelector
+                  value={formValues.billingStyle}
+                  onChange={(val) => setFormValues(prev => ({ ...prev, billingStyle: val }))}
+                />
+              </motion.div>
+            )}
+
+            {currentStep === 2 && (
               <motion.div
                 key="step-2"
                 initial={{ opacity: 0, x: 20 }}
@@ -345,7 +366,7 @@ export function CreatePlan({ onSuccess, onCancel, isEditing = false }: CreatePla
               </motion.div>
             )}
 
-            {currentStep === 2 && (
+            {currentStep === 3 && (
               <motion.div
                 key="step-3"
                 initial={{ opacity: 0, scale: 0.98 }}
@@ -480,12 +501,81 @@ export function CreatePlan({ onSuccess, onCancel, isEditing = false }: CreatePla
                         </div>
                       )}
 
-                      <div className="flex items-center justify-center p-8 bg-primary/5 rounded-3xl border-2 border-dashed border-primary/20">
-                        <div className="text-center space-y-4">
-                          <Sparkles className="w-12 h-12 text-primary mx-auto opacity-50" />
-                          <p className="text-sm text-primary font-bold italic tracking-tight">
-                            BillStack is calculating the most efficient tax & compliance ledger for this {formValues.billingStyle} configuration.
-                          </p>
+                      <div className="p-8 rounded-[2rem] border-2 border-primary bg-card/60 shadow-2xl relative overflow-hidden flex flex-col gap-6">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
+                        
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-3 py-1 rounded-full">
+                              {formValues.billingStyle || "Plan Preview"}
+                            </span>
+                            <span className="text-xs font-bold text-muted-foreground uppercase">
+                              {formValues.paymentType}
+                            </span>
+                          </div>
+                          <h3 className="text-2xl font-black tracking-tight mt-1">{formValues.name || "Unnamed Plan"}</h3>
+                          <p className="text-xs text-muted-foreground italic mt-0.5">{formValues.productName || "No product selected"}</p>
+                        </div>
+
+                        <div className="py-4 border-y border-border flex flex-col justify-center">
+                          {formValues.billingStyle === "subscription" && (
+                            <div>
+                              <div className="text-3xl font-black tracking-tight text-foreground">
+                                {currencySymbol}{formValues.price || "0"}
+                              </div>
+                              <div className="text-xs text-muted-foreground font-semibold">per {formValues.billingCycle || "month"}</div>
+                            </div>
+                          )}
+                          {formValues.billingStyle === "telecom" && (
+                            <div>
+                              <div className="text-3xl font-black tracking-tight text-foreground">
+                                {currencySymbol}{formValues.price || "0"}
+                              </div>
+                              <div className="text-xs text-muted-foreground font-semibold">
+                                Includes {formValues.dataLimit || "0GB"} data for {formValues.validity || "0"} days
+                              </div>
+                            </div>
+                          )}
+                          {formValues.billingStyle === "credits" && (
+                            <div>
+                              <div className="text-3xl font-black tracking-tight text-foreground">
+                                {currencySymbol}{formValues.price || "0"}
+                              </div>
+                              <div className="text-xs text-muted-foreground font-semibold">
+                                Adds {formValues.totalCredits || "0"} credits to wallet
+                              </div>
+                            </div>
+                          )}
+                          {formValues.billingStyle === "usage" && (
+                            <div>
+                              <div className="text-3xl font-black tracking-tight text-foreground">
+                                {currencySymbol}{formValues.pricePerUnit || "0.00"}
+                              </div>
+                              <div className="text-xs text-muted-foreground font-semibold">
+                                per {formValues.unitName || "API call"} (Metered billing)
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-3">
+                          <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">What's included:</div>
+                          {formValues.features ? (
+                            <ul className="space-y-2">
+                              {formValues.features
+                                .split(/[,\n]/)
+                                .map((f) => f.trim())
+                                .filter(Boolean)
+                                .map((feature, idx) => (
+                                  <li key={idx} className="flex items-center gap-2 text-xs font-medium text-foreground">
+                                    <Check className="w-4 h-4 text-primary shrink-0" />
+                                    <span>{feature}</span>
+                                  </li>
+                                ))}
+                            </ul>
+                          ) : (
+                            <p className="text-xs text-muted-foreground italic">Add features to see them listed here.</p>
+                          )}
                         </div>
                       </div>
                     </div>
