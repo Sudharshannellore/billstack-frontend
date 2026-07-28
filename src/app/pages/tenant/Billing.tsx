@@ -9,10 +9,41 @@ import {
   AlertTriangle,
   CheckCircle2,
   CalendarClock,
+  PlayCircle,
+  Eye,
+  RotateCw,
+  Receipt,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getCardThemeByIndex } from "../../components/cardThemes";
 import { formatMoney } from "../../components/currency";
+import { StatusBadge } from "../../components/StatusBadge";
+
+interface BillingRun {
+  id: string;
+  cycle: string;
+  status: "scheduled" | "running" | "completed" | "failed";
+  customers: number;
+  totalAmount: number;
+  runDate: string;
+}
+
+const initialBillingRuns: BillingRun[] = [
+  { id: "run_1042", cycle: "Jul 2026 Monthly", status: "completed", customers: 1284, totalAmount: 384200, runDate: "Jul 1, 2026" },
+  { id: "run_1041", cycle: "Jun 2026 Monthly", status: "completed", customers: 1201, totalAmount: 361500, runDate: "Jun 1, 2026" },
+  { id: "run_1043", cycle: "Aug 2026 Monthly", status: "scheduled", customers: 1310, totalAmount: 397800, runDate: "Aug 1, 2026" },
+];
+
+const upcomingRenewals = [
+  { customer: "Alice Johnson", plan: "Pro", date: "Aug 15, 2026", amount: 99 },
+  { customer: "Bob Smith", plan: "Ultra Pack", date: "Aug 18, 2026", amount: 50 },
+  { customer: "Carol White", plan: "Enterprise", date: "Aug 20, 2026", amount: 499 },
+];
+
+const upcomingCharges = [
+  { customer: "David Brown", reason: "Overage — API calls", date: "Aug 5, 2026", amount: 42 },
+  { customer: "Emma Davis", reason: "Add-on: extra seats", date: "Aug 8, 2026", amount: 150 },
+];
 import {
   Dialog,
   DialogContent,
@@ -50,6 +81,27 @@ export function Billing() {
 
   const [paymentFailed, setPaymentFailed] = useState(true);
   const [isRetrying, setIsRetrying] = useState(false);
+  const [billingRuns, setBillingRuns] = useState<BillingRun[]>(initialBillingRuns);
+  const [previewRun, setPreviewRun] = useState<BillingRun | null>(null);
+
+  const runBillingNow = () => {
+    const id = `run_${Math.floor(Math.random() * 9000 + 1000)}`;
+    setBillingRuns((prev) => [{ id, cycle: "Manual run", status: "running", customers: 1310, totalAmount: 397800, runDate: "Today" }, ...prev]);
+    toast.info("Billing run started");
+    setTimeout(() => {
+      setBillingRuns((prev) => prev.map((r) => (r.id === id ? { ...r, status: "completed" } : r)));
+      toast.success("Billing run completed", { description: "All invoices generated successfully." });
+    }, 2000);
+  };
+
+  const retryRun = (id: string) => {
+    setBillingRuns((prev) => prev.map((r) => (r.id === id ? { ...r, status: "running" } : r)));
+    toast.info("Retrying billing run...");
+    setTimeout(() => {
+      setBillingRuns((prev) => prev.map((r) => (r.id === id ? { ...r, status: "completed" } : r)));
+      toast.success("Billing run retried successfully");
+    }, 1500);
+  };
 
   const handleSetDefault = (id: number) => {
     setPaymentMethods((prev) =>
@@ -137,16 +189,120 @@ export function Billing() {
           <h1 className="text-3xl font-bold mb-2">Billing</h1>
           <p className="text-muted-foreground">Manage payment methods and billing settings</p>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setIsAddOpen(true)}
-          className="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark rounded-lg text-white font-medium shadow-lg shadow-primary/30 flex items-center gap-2"
-        >
-          <Plus className="w-5 h-5" />
-          <span>Add Card</span>
-        </motion.button>
+        <div className="flex items-center gap-3">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={runBillingNow}
+            className="px-5 py-3 bg-transparent border border-border rounded-lg text-foreground font-medium flex items-center gap-2 hover:bg-muted/30 transition-colors"
+          >
+            <PlayCircle className="w-5 h-5" />
+            <span>Run Billing Now</span>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setIsAddOpen(true)}
+            className="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark rounded-lg text-white font-medium shadow-lg shadow-primary/30 flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Add Card</span>
+          </motion.button>
+        </div>
       </div>
+
+      {/* Billing Runs */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+        <h3 className="text-lg font-semibold flex items-center gap-2"><Receipt className="w-5 h-5 text-muted-foreground" />Billing Runs</h3>
+        <div className={`relative bg-card border ${getCardThemeByIndex(2).border} rounded-2xl overflow-hidden`}>
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(2).topAccent} rounded-t-2xl pointer-events-none z-10`} />
+          <table className="w-full relative z-10">
+            <thead className="bg-white/[0.01] border-b border-white/[0.04]">
+              <tr>
+                <th className="text-left py-3 px-6 text-xs font-medium text-muted-foreground">Run</th>
+                <th className="text-left py-3 px-6 text-xs font-medium text-muted-foreground">Cycle</th>
+                <th className="text-left py-3 px-6 text-xs font-medium text-muted-foreground">Customers</th>
+                <th className="text-left py-3 px-6 text-xs font-medium text-muted-foreground">Total</th>
+                <th className="text-left py-3 px-6 text-xs font-medium text-muted-foreground">Status</th>
+                <th className="text-left py-3 px-6 text-xs font-medium text-muted-foreground text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {billingRuns.map((run) => (
+                <tr key={run.id} className="border-b border-border hover:bg-muted/30 transition-colors">
+                  <td className="py-3 px-6 font-mono text-xs text-muted-foreground">{run.id}</td>
+                  <td className="py-3 px-6 text-sm">{run.cycle}</td>
+                  <td className="py-3 px-6 text-sm text-muted-foreground">{run.customers.toLocaleString()}</td>
+                  <td className="py-3 px-6 font-medium">{formatMoney(run.totalAmount)}</td>
+                  <td className="py-3 px-6"><StatusBadge status={run.status} /></td>
+                  <td className="py-3 px-6 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button onClick={() => setPreviewRun(run)} title="Preview" className="p-2 hover:bg-muted rounded-lg transition-colors">
+                        <Eye className="w-4 h-4 text-muted-foreground" />
+                      </button>
+                      {run.status === "failed" && (
+                        <button onClick={() => retryRun(run.id)} title="Retry" className="p-2 hover:bg-muted rounded-lg transition-colors">
+                          <RotateCw className="w-4 h-4 text-cyan-400" />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
+
+      {/* Billing calendar: upcoming renewals + charges */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className={`relative p-5 bg-card border ${getCardThemeByIndex(4).border} rounded-2xl`}>
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(4).topAccent} rounded-t-2xl pointer-events-none`} />
+          <h4 className="text-sm font-semibold mb-3 flex items-center gap-2"><CalendarClock className="w-4 h-4 text-muted-foreground" />Upcoming Renewals</h4>
+          <div className="space-y-2">
+            {upcomingRenewals.map((r, i) => (
+              <div key={i} className="flex items-center justify-between text-sm p-2 rounded-lg bg-muted/20">
+                <div>
+                  <div className="font-medium">{r.customer}</div>
+                  <div className="text-xs text-muted-foreground">{r.plan} · {r.date}</div>
+                </div>
+                <span className="font-bold text-primary">{formatMoney(r.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className={`relative p-5 bg-card border ${getCardThemeByIndex(5).border} rounded-2xl`}>
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(5).topAccent} rounded-t-2xl pointer-events-none`} />
+          <h4 className="text-sm font-semibold mb-3 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-muted-foreground" />Upcoming Charges</h4>
+          <div className="space-y-2">
+            {upcomingCharges.map((c, i) => (
+              <div key={i} className="flex items-center justify-between text-sm p-2 rounded-lg bg-muted/20">
+                <div>
+                  <div className="font-medium">{c.customer}</div>
+                  <div className="text-xs text-muted-foreground">{c.reason} · {c.date}</div>
+                </div>
+                <span className="font-bold text-primary">{formatMoney(c.amount)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <Dialog open={!!previewRun} onOpenChange={(open) => !open && setPreviewRun(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Preview Billing Run</DialogTitle>
+            <DialogDescription>{previewRun?.id} — {previewRun?.cycle}</DialogDescription>
+          </DialogHeader>
+          {previewRun && (
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between p-2 rounded-lg bg-muted/20"><span className="text-muted-foreground">Customers billed</span><span className="font-medium">{previewRun.customers.toLocaleString()}</span></div>
+              <div className="flex justify-between p-2 rounded-lg bg-muted/20"><span className="text-muted-foreground">Total invoiced</span><span className="font-medium">{formatMoney(previewRun.totalAmount)}</span></div>
+              <div className="flex justify-between p-2 rounded-lg bg-muted/20"><span className="text-muted-foreground">Run date</span><span className="font-medium">{previewRun.runDate}</span></div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <AnimatePresence>
         {paymentFailed && (

@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "motion/react";
-import { FileText, Download, MoreVertical, ChevronDown, ChevronRight, RotateCcw } from "lucide-react";
+import { FileText, Download, MoreVertical, ChevronDown, ChevronRight, RotateCcw, History, Eye, Mail, Receipt } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { getCardThemeByIndex } from "../../components/cardThemes";
@@ -9,14 +9,15 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
   DialogFooter,
 } from "../../components/ui/dialog";
 import { Label } from "../../components/ui/label";
 import { Input } from "../../components/ui/input";
 import { Textarea } from "../../components/ui/textarea";
 import { Button } from "../../components/ui/button";
-
-type InvoiceStatus = "paid" | "pending" | "overdue" | "refunded";
+import { StatusBadge } from "../../components/StatusBadge";
+import type { InvoiceStatus } from "../../types/common";
 
 interface LineItem {
   description: string;
@@ -111,20 +112,42 @@ const initialInvoices: Invoice[] = [
     amount: 199,
     currency: "INR",
     date: "Mar 10, 2026",
-    status: "paid",
+    status: "sent",
     lineItems: [{ description: "Pro Plan - Annual Discount Adjustment", quantity: 1, unitPrice: 168.64, total: 168.64 }],
     subtotal: 168.64,
     tax: { rate: 18, amount: 30.36 },
     total: 199,
   },
+  {
+    id: "INV-1025",
+    customer: "Grace Lee",
+    amount: 99,
+    currency: "INR",
+    date: "Apr 2, 2026",
+    status: "draft",
+    lineItems: [{ description: "Pro Plan - Monthly Subscription", quantity: 1, unitPrice: 83.9, total: 83.9 }],
+    subtotal: 83.9,
+    tax: { rate: 18, amount: 15.1 },
+    total: 99,
+  },
+  {
+    id: "INV-1018",
+    customer: "Henry Ford",
+    amount: 299,
+    currency: "INR",
+    date: "Mar 5, 2026",
+    status: "voided",
+    lineItems: [{ description: "Business Plan - Monthly Subscription", quantity: 1, unitPrice: 253.39, total: 253.39 }],
+    subtotal: 253.39,
+    tax: { rate: 18, amount: 45.61 },
+    total: 299,
+  },
 ];
 
-const statusStyles: Record<InvoiceStatus, string> = {
-  paid: "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20",
-  pending: "bg-amber-500/10 text-amber-500 border border-amber-500/20",
-  overdue: "bg-rose-500/10 text-rose-500 border border-rose-500/20",
-  refunded: "bg-slate-500/10 text-slate-400 border border-slate-500/20",
-};
+const paymentHistoryFor = (invoice: Invoice) =>
+  invoice.status === "paid" || invoice.status === "refunded" || invoice.status === "partial"
+    ? [{ method: "Visa •••• 4242", amount: invoice.total, date: invoice.date, status: invoice.status === "refunded" ? "refunded" : "paid" }]
+    : [];
 
 function buildInvoiceText(invoice: Invoice): string {
   const symbol = getCurrencySymbol(invoice.currency);
@@ -168,6 +191,12 @@ export function Invoices() {
   const [refundInvoice, setRefundInvoice] = useState<Invoice | null>(null);
   const [refundAmount, setRefundAmount] = useState("");
   const [refundReason, setRefundReason] = useState("");
+  const [timelineInvoice, setTimelineInvoice] = useState<Invoice | null>(null);
+  const [pdfInvoice, setPdfInvoice] = useState<Invoice | null>(null);
+  const [emailInvoice, setEmailInvoice] = useState<Invoice | null>(null);
+  const [creditNoteInvoice, setCreditNoteInvoice] = useState<Invoice | null>(null);
+  const [creditNoteAmount, setCreditNoteAmount] = useState("");
+  const [creditNoteReason, setCreditNoteReason] = useState("");
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -202,6 +231,21 @@ export function Invoices() {
       }`,
     });
     closeRefundDialog();
+  };
+
+  const openCreditNoteDialog = (invoice: Invoice) => {
+    setShowMenu(null);
+    setCreditNoteInvoice(invoice);
+    setCreditNoteAmount(invoice.total.toFixed(2));
+    setCreditNoteReason("");
+  };
+
+  const submitCreditNote = () => {
+    if (!creditNoteInvoice) return;
+    toast.success(`Credit note issued for ${creditNoteInvoice.id}`, {
+      description: `${getCurrencySymbol(creditNoteInvoice.currency)}${creditNoteAmount} credited${creditNoteReason ? ` — ${creditNoteReason}` : ""}`,
+    });
+    setCreditNoteInvoice(null);
   };
 
   return (
@@ -266,9 +310,7 @@ export function Invoices() {
                       <td className="py-4 px-6 font-medium">{formatMoney(invoice.total, invoice.currency)}</td>
                       <td className="py-4 px-6 text-muted-foreground">{invoice.date}</td>
                       <td className="py-4 px-6">
-                        <span className={`px-2 py-1 text-xs rounded capitalize ${statusStyles[invoice.status]}`}>
-                          {invoice.status}
-                        </span>
+                        <StatusBadge status={invoice.status} />
                       </td>
                       <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1">
@@ -308,6 +350,28 @@ export function Invoices() {
                                     <Download className="w-4 h-4 text-primary" />
                                     <span>Download</span>
                                   </button>
+                                  <button
+                                    onClick={() => { setShowMenu(null); setPdfInvoice(invoice); }}
+                                    className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium"
+                                  >
+                                    <Eye className="w-4 h-4 text-muted-foreground" />
+                                    <span>PDF Preview</span>
+                                  </button>
+                                  <button
+                                    onClick={() => { setShowMenu(null); setEmailInvoice(invoice); }}
+                                    className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium"
+                                  >
+                                    <Mail className="w-4 h-4 text-muted-foreground" />
+                                    <span>Email Preview</span>
+                                  </button>
+                                  <button
+                                    onClick={() => { setShowMenu(null); setTimelineInvoice(invoice); }}
+                                    className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium"
+                                  >
+                                    <History className="w-4 h-4 text-muted-foreground" />
+                                    <span>View Timeline</span>
+                                  </button>
+                                  <div className="h-[1px] w-full bg-border my-1" />
                                   {invoice.status === "paid" && (
                                     <button
                                       onClick={() => openRefundDialog(invoice)}
@@ -315,6 +379,15 @@ export function Invoices() {
                                     >
                                       <RotateCcw className="w-4 h-4" />
                                       <span>Issue Refund</span>
+                                    </button>
+                                  )}
+                                  {(invoice.status === "paid" || invoice.status === "partial") && (
+                                    <button
+                                      onClick={() => openCreditNoteDialog(invoice)}
+                                      className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium"
+                                    >
+                                      <Receipt className="w-4 h-4 text-cyan-400" />
+                                      <span>Issue Credit Note</span>
                                     </button>
                                   )}
                                 </motion.div>
@@ -368,6 +441,19 @@ export function Invoices() {
                                   <span>{formatMoney(invoice.total, invoice.currency)}</span>
                                 </div>
                               </div>
+                              {paymentHistoryFor(invoice).length > 0 && (
+                                <div className="mt-4 pt-4 border-t border-border">
+                                  <div className="text-xs text-muted-foreground uppercase font-semibold tracking-wider mb-2">Payment History</div>
+                                  {paymentHistoryFor(invoice).map((p, i) => (
+                                    <div key={i} className="flex items-center justify-between text-sm p-2 rounded-lg bg-muted/20">
+                                      <span>{p.method}</span>
+                                      <span className="text-muted-foreground">{p.date}</span>
+                                      <StatusBadge status={p.status} />
+                                      <span className="font-medium">{formatMoney(p.amount, invoice.currency)}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </td>
                         </motion.tr>
@@ -420,6 +506,91 @@ export function Invoices() {
             <Button variant="destructive" onClick={submitRefund} disabled={!refundAmount}>
               Issue Refund
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Invoice Timeline Dialog */}
+      <Dialog open={!!timelineInvoice} onOpenChange={(open) => !open && setTimelineInvoice(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><History className="w-5 h-5 text-primary" /><span>{timelineInvoice?.id} — Timeline</span></DialogTitle>
+          </DialogHeader>
+          {timelineInvoice && (
+            <div className="space-y-4">
+              {[
+                { label: "Invoice created", time: timelineInvoice.date },
+                { label: "Sent to customer via email", time: timelineInvoice.date },
+                { label: `Marked as ${timelineInvoice.status}`, time: "2 days ago" },
+              ].map((event, i, arr) => (
+                <div key={i} className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="w-2 h-2 rounded-full bg-primary mt-1.5" />
+                    {i < arr.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
+                  </div>
+                  <div className="pb-2">
+                    <div className="text-sm font-medium">{event.label}</div>
+                    <div className="text-[10px] text-muted-foreground/70 mt-1">{event.time}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* PDF Preview Dialog */}
+      <Dialog open={!!pdfInvoice} onOpenChange={(open) => !open && setPdfInvoice(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Eye className="w-5 h-5 text-primary" /><span>PDF Preview — {pdfInvoice?.id}</span></DialogTitle>
+          </DialogHeader>
+          {pdfInvoice && (
+            <div className="bg-white text-black rounded-lg p-6 text-xs font-mono whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
+              {buildInvoiceText(pdfInvoice)}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Email Preview Dialog */}
+      <Dialog open={!!emailInvoice} onOpenChange={(open) => !open && setEmailInvoice(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Mail className="w-5 h-5 text-primary" /><span>Email Preview — {emailInvoice?.id}</span></DialogTitle>
+            <DialogDescription>What the customer receives in their inbox.</DialogDescription>
+          </DialogHeader>
+          {emailInvoice && (
+            <div className="rounded-lg border border-border p-4 space-y-2 text-sm">
+              <div className="text-xs text-muted-foreground">To: {emailInvoice.customer.toLowerCase().replace(" ", ".")}@example.com</div>
+              <div className="font-semibold">Your invoice {emailInvoice.id} from BillStack</div>
+              <p className="text-muted-foreground">
+                Hi {emailInvoice.customer.split(" ")[0]}, your invoice for {formatMoney(emailInvoice.total, emailInvoice.currency)} dated {emailInvoice.date} is ready. View or download the attached PDF for full details.
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Credit Note Dialog */}
+      <Dialog open={!!creditNoteInvoice} onOpenChange={(open) => !open && setCreditNoteInvoice(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><Receipt className="w-5 h-5 text-cyan-400" /><span>Issue Credit Note — {creditNoteInvoice?.id}</span></DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="credit-amount">Credit Amount ({creditNoteInvoice ? getCurrencySymbol(creditNoteInvoice.currency) : ""})</Label>
+              <Input id="credit-amount" type="number" step="0.01" value={creditNoteAmount} onChange={(e) => setCreditNoteAmount(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="credit-reason">Reason</Label>
+              <Textarea id="credit-reason" placeholder="Reason for this credit note..." value={creditNoteReason} onChange={(e) => setCreditNoteReason(e.target.value)} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreditNoteInvoice(null)}>Cancel</Button>
+            <Button onClick={submitCreditNote} disabled={!creditNoteAmount} className="bg-primary hover:bg-primary-dark">Issue Credit Note</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

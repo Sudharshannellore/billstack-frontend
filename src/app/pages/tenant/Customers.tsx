@@ -1,11 +1,20 @@
 import { motion, AnimatePresence } from "motion/react";
 import { Plus, Users, Mail, MoreVertical, Edit, Trash2, Clock, IndianRupee, CheckCircle, Download, MessageSquare, Eye } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { getCardThemeByIndex } from "../../components/cardThemes";
+import type { CustomerSegment } from "../../types/common";
 
-const initialCustomers = [
+export const SEGMENT_LABELS: Record<CustomerSegment, string> = {
+  high_value: "High Value",
+  enterprise: "Enterprise",
+  trial: "Trial",
+  inactive: "Inactive",
+  churn_risk: "Churn Risk",
+};
+
+export const initialCustomers = [
   {
     id: 1,
     name: "Alice Johnson",
@@ -17,6 +26,7 @@ const initialCustomers = [
     ltv: "₹4,200",
     lastActive: "2 hours ago",
     healthScore: "healthy" as const,
+    segments: ["high_value"] as CustomerSegment[],
   },
   {
     id: 2,
@@ -29,6 +39,7 @@ const initialCustomers = [
     ltv: "₹11,800",
     lastActive: "1 day ago",
     healthScore: "healthy" as const,
+    segments: ["enterprise", "high_value"] as CustomerSegment[],
   },
   {
     id: 3,
@@ -41,6 +52,7 @@ const initialCustomers = [
     ltv: "₹2,900",
     lastActive: "3 days ago",
     healthScore: "at-risk" as const,
+    segments: ["trial", "churn_risk"] as CustomerSegment[],
   },
   {
     id: 4,
@@ -53,6 +65,7 @@ const initialCustomers = [
     ltv: "₹1,050",
     lastActive: "3 weeks ago",
     healthScore: "churned" as const,
+    segments: ["inactive", "churn_risk"] as CustomerSegment[],
   },
 ];
 
@@ -84,6 +97,12 @@ export function Customers() {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState<number | null>(null);
   const [customersList] = useState(initialCustomers);
+  const [segmentFilter, setSegmentFilter] = useState<CustomerSegment | "all">("all");
+
+  const filteredCustomers = useMemo(() => {
+    if (segmentFilter === "all") return customersList;
+    return customersList.filter((c) => c.segments.includes(segmentFilter));
+  }, [customersList, segmentFilter]);
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -152,6 +171,24 @@ export function Customers() {
         })}
       </div>
 
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          onClick={() => setSegmentFilter("all")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${segmentFilter === "all" ? "bg-primary/10 text-primary border border-primary/20" : "bg-transparent border border-border text-muted-foreground hover:bg-muted/30"}`}
+        >
+          All
+        </button>
+        {(Object.entries(SEGMENT_LABELS) as [CustomerSegment, string][]).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setSegmentFilter(key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${segmentFilter === key ? "bg-primary/10 text-primary border border-primary/20" : "bg-transparent border border-border text-muted-foreground hover:bg-muted/30"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -196,7 +233,7 @@ export function Customers() {
               </tr>
             </thead>
             <tbody>
-              {customersList.map((customer, index) => (
+              {filteredCustomers.map((customer, index) => (
                 <motion.tr
                   key={customer.id}
                   initial={{ opacity: 0, x: -20 }}
@@ -220,6 +257,13 @@ export function Customers() {
                         <div className="text-sm text-muted-foreground flex items-center gap-1">
                           <Mail className="w-3 h-3" />
                           {customer.email}
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                          {customer.segments.map((s) => (
+                            <span key={s} className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide bg-white/5 text-muted-foreground border border-white/[0.06]">
+                              {SEGMENT_LABELS[s]}
+                            </span>
+                          ))}
                         </div>
                       </div>
                     </div>
@@ -259,7 +303,7 @@ export function Customers() {
                       <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
-                        onClick={() => toast(`Viewing ${customer.name}'s details...`)}
+                        onClick={() => navigate(`/tenant/customers/${customer.id}`)}
                         className="p-2 hover:bg-muted rounded-lg transition-colors"
                         title="View details"
                       >

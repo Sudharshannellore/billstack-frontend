@@ -1,18 +1,25 @@
+import { useEffect, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { StatCard } from "../../components/StatCard";
 import { getCardThemeByIndex } from "../../components/cardThemes";
-import { 
-  IndianRupee, 
-  Users, 
-  Repeat, 
-  TrendingUp, 
-  CreditCard, 
-  Activity, 
-  ArrowUpRight, 
+import {
+  IndianRupee,
+  Users,
+  Repeat,
+  Activity,
   ArrowRight,
   Sparkles,
   Zap,
-  Calendar
+  Maximize2,
+  Minimize2,
+  Save,
+  RotateCcw,
+  Wallet as WalletIcon,
+  FileText,
+  CalendarClock,
+  Bell,
+  Server,
+  GripVertical,
 } from "lucide-react";
 import { Link } from "react-router";
 import {
@@ -27,6 +34,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import { toast } from "sonner";
 
 const revenueData = [
   { id: "mon", date: "Mon", revenue: 4200 },
@@ -52,16 +60,268 @@ const recentSubscriptions = [
   { customer: "David Brown", plan: "Pro Plan", amount: "₹2,999/mo", status: "active", email: "david@tech.com" },
 ];
 
-export function TenantDashboard() {
-  const revenueTheme = getCardThemeByIndex(0);
-  const planShareTheme = getCardThemeByIndex(1);
-  const subsTheme = getCardThemeByIndex(2);
+type WidgetSize = "sm" | "md" | "lg";
+const SIZE_SPAN: Record<WidgetSize, string> = { sm: "lg:col-span-4", md: "lg:col-span-6", lg: "lg:col-span-12" };
+const NEXT_SIZE: Record<WidgetSize, WidgetSize> = { sm: "md", md: "lg", lg: "sm" };
+
+interface WidgetDef {
+  id: string;
+  title: string;
+  render: () => ReactNode;
+}
+
+const STORAGE_KEY = "billstack_dashboard_layout_v1";
+
+function WidgetShell({
+  title,
+  themeIndex,
+  children,
+  size,
+  onCycleSize,
+  draggableProps,
+}: {
+  title: string;
+  themeIndex: number;
+  children: ReactNode;
+  size: WidgetSize;
+  onCycleSize: () => void;
+  draggableProps: React.HTMLAttributes<HTMLDivElement>;
+}) {
+  const theme = getCardThemeByIndex(themeIndex);
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 15 }} 
-      animate={{ opacity: 1, y: 0 }} 
-      className="space-y-8"
+    <div
+      {...draggableProps}
+      className={`relative p-5 bg-card border ${theme.border} rounded-2xl overflow-hidden group ${SIZE_SPAN[size]}`}
     >
+      <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${theme.topAccent} rounded-t-2xl pointer-events-none`} />
+      <div className="relative z-10 flex items-center justify-between mb-4">
+        <div className="flex items-center gap-2">
+          <GripVertical className="w-4 h-4 text-muted-foreground/50 cursor-grab active:cursor-grabbing" />
+          <h3 className="text-sm font-semibold text-white">{title}</h3>
+        </div>
+        <button
+          onClick={onCycleSize}
+          title="Resize widget"
+          className="p-1.5 rounded-lg hover:bg-white/5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+        >
+          {size === "lg" ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
+        </button>
+      </div>
+      <div className="relative z-10">{children}</div>
+    </div>
+  );
+}
+
+export function TenantDashboard() {
+  const [widgetOrder, setWidgetOrder] = useState<string[]>([
+    "revenue", "planShare", "customers", "usage", "wallet", "invoices", "renewals", "apiHealth", "notifications",
+  ]);
+  const [widgetSizes, setWidgetSizes] = useState<Record<string, WidgetSize>>({
+    revenue: "lg", planShare: "md", customers: "md", usage: "sm", wallet: "sm",
+    invoices: "sm", renewals: "md", apiHealth: "sm", notifications: "sm",
+  });
+  const [dragId, setDragId] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.order) setWidgetOrder(parsed.order);
+        if (parsed.sizes) setWidgetSizes(parsed.sizes);
+      }
+    } catch {
+      // ignore malformed saved layout
+    }
+  }, []);
+
+  const saveLayout = () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ order: widgetOrder, sizes: widgetSizes }));
+    toast.success("Dashboard layout saved");
+  };
+
+  const resetLayout = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setWidgetOrder(["revenue", "planShare", "customers", "usage", "wallet", "invoices", "renewals", "apiHealth", "notifications"]);
+    setWidgetSizes({ revenue: "lg", planShare: "md", customers: "md", usage: "sm", wallet: "sm", invoices: "sm", renewals: "md", apiHealth: "sm", notifications: "sm" });
+    toast.info("Dashboard layout reset to default");
+  };
+
+  const cycleSize = (id: string) => {
+    setWidgetSizes((prev) => ({ ...prev, [id]: NEXT_SIZE[prev[id] ?? "md"] }));
+  };
+
+  const handleDrop = (targetId: string) => {
+    if (!dragId || dragId === targetId) return;
+    setWidgetOrder((prev) => {
+      const next = [...prev];
+      const from = next.indexOf(dragId);
+      const to = next.indexOf(targetId);
+      next.splice(from, 1);
+      next.splice(to, 0, dragId);
+      return next;
+    });
+    setDragId(null);
+  };
+
+  const widgets: Record<string, WidgetDef> = {
+    revenue: {
+      id: "revenue",
+      title: "Revenue Operations Overview",
+      render: () => (
+        <div className="h-[240px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={revenueData}>
+              <defs>
+                <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.2} />
+                  <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+              <XAxis dataKey="date" stroke="#71717A" fontSize={11} tickLine={false} />
+              <YAxis stroke="#71717A" fontSize={11} tickLine={false} />
+              <Tooltip contentStyle={{ backgroundColor: "#0B0B0F", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px", fontSize: 12 }} />
+              <Area type="monotone" dataKey="revenue" stroke="#8B5CF6" strokeWidth={2.5} fillOpacity={1} fill="url(#revenueGrad)" />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      ),
+    },
+    planShare: {
+      id: "planShare",
+      title: "Active Plan Share",
+      render: () => (
+        <div>
+          <div className="h-[150px] w-full flex items-center justify-center relative mb-3">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={planDistribution} cx="50%" cy="50%" innerRadius={40} outerRadius={58} paddingAngle={3} dataKey="value">
+                  {planDistribution.map((entry) => (
+                    <Cell key={entry.id} fill={entry.color} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="absolute flex flex-col items-center justify-center">
+              <span className="text-[10px] text-muted-foreground uppercase font-semibold">Active</span>
+              <span className="text-lg font-extrabold text-white">892</span>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            {planDistribution.map((plan) => (
+              <div key={plan.name} className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: plan.color }} />
+                  <span className="text-muted-foreground">{plan.name}</span>
+                </div>
+                <span className="font-bold text-white">{plan.value}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ),
+    },
+    customers: {
+      id: "customers",
+      title: "Recent Active Subscriptions",
+      render: () => (
+        <div className="space-y-2">
+          {recentSubscriptions.map((sub, index) => (
+            <div key={index} className="flex items-center justify-between text-xs p-2 rounded-lg bg-white/[0.02]">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-full bg-white/5 border border-white/[0.08] flex items-center justify-center font-bold text-[10px]">
+                  {sub.customer.split(" ").map((n) => n[0]).join("")}
+                </div>
+                <span className="font-medium text-white">{sub.customer}</span>
+              </div>
+              <span className="font-bold text-white">{sub.amount}</span>
+            </div>
+          ))}
+          <Link to="/tenant/subscriptions" className="flex items-center gap-1 text-xs text-primary font-bold hover:underline pt-1">
+            <span>Manage all subscriptions</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      ),
+    },
+    usage: {
+      id: "usage",
+      title: "Usage",
+      render: () => (
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center justify-between"><span className="text-muted-foreground">API Calls</span><span className="font-bold">1,53,500</span></div>
+          <div className="flex items-center justify-between"><span className="text-muted-foreground">Storage</span><span className="font-bold">64.2 GB</span></div>
+          <Link to="/tenant/usage" className="text-xs text-primary font-bold hover:underline">View usage explorer →</Link>
+        </div>
+      ),
+    },
+    wallet: {
+      id: "wallet",
+      title: "Wallet",
+      render: () => (
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2 text-2xl font-black text-white"><WalletIcon className="w-5 h-5 text-primary" />₹19,270</div>
+          <p className="text-xs text-muted-foreground">Total balance across 6 customer wallets</p>
+          <Link to="/tenant/wallet" className="text-xs text-primary font-bold hover:underline">Manage wallet →</Link>
+        </div>
+      ),
+    },
+    invoices: {
+      id: "invoices",
+      title: "Invoices",
+      render: () => (
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2 text-2xl font-black text-white"><FileText className="w-5 h-5 text-primary" />3 overdue</div>
+          <p className="text-xs text-muted-foreground">₹499 total overdue across 1 invoice</p>
+          <Link to="/tenant/invoices" className="text-xs text-primary font-bold hover:underline">Review invoices →</Link>
+        </div>
+      ),
+    },
+    renewals: {
+      id: "renewals",
+      title: "Upcoming Renewals",
+      render: () => (
+        <div className="space-y-2 text-sm">
+          {[
+            { name: "Alice Johnson", date: "Aug 15" },
+            { name: "Bob Smith", date: "Aug 18" },
+            { name: "Carol White", date: "Aug 20" },
+          ].map((r) => (
+            <div key={r.name} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02]">
+              <span className="flex items-center gap-2"><CalendarClock className="w-3.5 h-3.5 text-muted-foreground" />{r.name}</span>
+              <span className="text-muted-foreground">{r.date}</span>
+            </div>
+          ))}
+        </div>
+      ),
+    },
+    apiHealth: {
+      id: "apiHealth",
+      title: "API Health",
+      render: () => (
+        <div className="space-y-2 text-sm">
+          <div className="flex items-center gap-2"><Server className="w-4 h-4 text-emerald-400" /><span className="font-bold text-emerald-400">All systems operational</span></div>
+          <div className="flex items-center justify-between text-xs text-muted-foreground"><span>P99 latency</span><span>142ms</span></div>
+          <div className="flex items-center justify-between text-xs text-muted-foreground"><span>Uptime (30d)</span><span>99.98%</span></div>
+        </div>
+      ),
+    },
+    notifications: {
+      id: "notifications",
+      title: "Notifications",
+      render: () => (
+        <div className="space-y-2 text-sm">
+          <div className="flex items-start gap-2"><Bell className="w-3.5 h-3.5 text-amber-400 mt-0.5" /><span className="text-xs text-muted-foreground">Payment failed for Bob Smith's subscription</span></div>
+          <div className="flex items-start gap-2"><Bell className="w-3.5 h-3.5 text-primary mt-0.5" /><span className="text-xs text-muted-foreground">3 customers trial ending this week</span></div>
+          <Link to="/tenant/profile" className="text-xs text-primary font-bold hover:underline">Notification preferences →</Link>
+        </div>
+      ),
+    },
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
       {/* Upper Welcome Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -75,280 +335,74 @@ export function TenantDashboard() {
           <p className="text-muted-foreground text-sm">Here's your aggregated SaaS performance and billing lifecycle operations.</p>
         </div>
 
-        <Link to="/tenant/plans/create">
-          <motion.button
-            whileHover={{ scale: 1.03, y: -1 }}
-            whileTap={{ scale: 0.97 }}
-            className="px-5 py-3 bg-gradient-to-r from-primary to-violet-600 hover:from-primary-dark hover:to-violet-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-2"
+        <div className="flex items-center gap-3">
+          <button
+            onClick={resetLayout}
+            className="px-4 py-3 bg-transparent border border-border rounded-xl text-foreground text-sm font-medium flex items-center gap-2 hover:bg-muted/30 transition-colors"
           >
-            <Zap className="w-4 h-4" />
-            <span>Create New Plan</span>
-          </motion.button>
-        </Link>
+            <RotateCcw className="w-4 h-4" />
+            <span className="hidden sm:inline">Reset Layout</span>
+          </button>
+          <button
+            onClick={saveLayout}
+            className="px-4 py-3 bg-transparent border border-border rounded-xl text-foreground text-sm font-medium flex items-center gap-2 hover:bg-muted/30 transition-colors"
+          >
+            <Save className="w-4 h-4" />
+            <span className="hidden sm:inline">Save Layout</span>
+          </button>
+          <Link to="/tenant/plans/create">
+            <motion.button
+              whileHover={{ scale: 1.03, y: -1 }}
+              whileTap={{ scale: 0.97 }}
+              className="px-5 py-3 bg-gradient-to-r from-primary to-violet-600 hover:from-primary-dark hover:to-violet-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-2"
+            >
+              <Zap className="w-4 h-4" />
+              <span>Create New Plan</span>
+            </motion.button>
+          </Link>
+        </div>
       </div>
 
       {/* Primary Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard
-          title="Monthly Revenue"
-          value="₹34,680"
-          change="+18%"
-          changeType="positive"
-          icon={IndianRupee}
-          delay={0}
-          colorIndex={0}
-        />
-        <StatCard
-          title="Active Customers"
-          value="1,284"
-          change="+12%"
-          changeType="positive"
-          icon={Users}
-          delay={0.1}
-          colorIndex={1}
-        />
-        <StatCard
-          title="Active Subscriptions"
-          value="892"
-          change="+8%"
-          changeType="positive"
-          icon={Repeat}
-          delay={0.2}
-          colorIndex={2}
-        />
-        <StatCard
-          title="MRR Growth"
-          value="23%"
-          change="+5%"
-          changeType="positive"
-          icon={TrendingUp}
-          delay={0.3}
-          colorIndex={3}
-        />
-        <StatCard
-          title="Conversion Rate"
-          value="3.8%"
-          change="+1.2%"
-          changeType="positive"
-          icon={CreditCard}
-          delay={0.4}
-          colorIndex={4}
-        />
-        <StatCard
-          title="API Events Ingested"
-          value="2.4M"
-          change="+32%"
-          changeType="positive"
-          icon={Activity}
-          delay={0.5}
-          colorIndex={5}
-        />
+        <StatCard title="Monthly Revenue" value="₹34,680" change="+18%" changeType="positive" icon={IndianRupee} delay={0} colorIndex={0} />
+        <StatCard title="Active Customers" value="1,284" change="+12%" changeType="positive" icon={Users} delay={0.1} colorIndex={1} />
+        <StatCard title="Active Subscriptions" value="892" change="+8%" changeType="positive" icon={Repeat} delay={0.2} colorIndex={2} />
+        <StatCard title="API Events Ingested" value="2.4M" change="+32%" changeType="positive" icon={Activity} delay={0.3} colorIndex={5} />
       </div>
 
-      {/* Charts Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-        
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className={`relative lg:col-span-8 p-6 bg-card border ${revenueTheme.border} rounded-2xl flex flex-col justify-between overflow-hidden`}
-        >
-          {/* Top accent bar */}
-          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${revenueTheme.topAccent} rounded-t-2xl pointer-events-none`} />
-          {/* Gradient tint */}
-          <div className={`absolute inset-0 bg-gradient-to-br ${revenueTheme.bgGlow} pointer-events-none`} />
-          {/* Glow orb */}
-          <div className={`absolute -top-6 -right-6 w-32 h-32 bg-gradient-to-br ${revenueTheme.bgGlow} rounded-full blur-3xl pointer-events-none`} />
-          
-          <div className="relative z-10 flex flex-col justify-between h-full w-full">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h3 className="text-lg font-bold text-white">Revenue Operations Overview</h3>
-              <p className="text-xs text-muted-foreground font-light mt-0.5">Aggregated billing collections over the past week.</p>
+      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+        <GripVertical className="w-3.5 h-3.5" />
+        Drag the handle to reorder widgets, or hover a widget to resize it. Layouts persist locally per browser.
+      </p>
+
+      {/* Widget grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {widgetOrder.map((id) => {
+          const widget = widgets[id];
+          if (!widget) return null;
+          return (
+            <div
+              key={id}
+              draggable
+              onDragStart={() => setDragId(id)}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => handleDrop(id)}
+              className={SIZE_SPAN[widgetSizes[id] ?? "md"]}
+            >
+              <WidgetShell
+                title={widget.title}
+                themeIndex={Object.keys(widgets).indexOf(id)}
+                size={widgetSizes[id] ?? "md"}
+                onCycleSize={() => cycleSize(id)}
+                draggableProps={{}}
+              >
+                {widget.render()}
+              </WidgetShell>
             </div>
-            <div className="flex items-center gap-1 bg-white/[0.02] border border-white/[0.06] rounded-xl p-1">
-              <button className="px-3 py-1.5 bg-primary text-white text-xs font-semibold rounded-lg shadow-md">
-                Week
-              </button>
-              <button className="px-3 py-1.5 text-muted-foreground hover:text-white text-xs font-semibold rounded-lg">
-                Month
-              </button>
-              <button className="px-3 py-1.5 text-muted-foreground hover:text-white text-xs font-semibold rounded-lg">
-                Year
-              </button>
-            </div>
-          </div>
-
-          <div className="h-[280px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={revenueData}>
-                <defs>
-                  <linearGradient id="revenueGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.2}/>
-                    <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-                <XAxis dataKey="date" stroke="#71717A" fontSize={11} tickLine={false} />
-                <YAxis stroke="#71717A" fontSize={11} tickLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: "#0B0B0F",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: "12px",
-                    fontSize: 12
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#8B5CF6"
-                  strokeWidth={2.5}
-                  fillOpacity={1}
-                  fill="url(#revenueGrad)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-          </div>
-        </motion.div>
-
-        {/* Plan Share (Pie Chart) */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className={`relative lg:col-span-4 p-6 bg-card border ${planShareTheme.border} rounded-2xl flex flex-col justify-between overflow-hidden`}
-        >
-          {/* Top accent bar */}
-          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${planShareTheme.topAccent} rounded-t-2xl pointer-events-none`} />
-          {/* Gradient tint */}
-          <div className={`absolute inset-0 bg-gradient-to-br ${planShareTheme.bgGlow} pointer-events-none`} />
-          {/* Glow orb */}
-          <div className={`absolute -top-6 -right-6 w-32 h-32 bg-gradient-to-br ${planShareTheme.bgGlow} rounded-full blur-3xl pointer-events-none`} />
-          
-          <div className="relative z-10 flex flex-col justify-between h-full w-full">
-          <div>
-            <h3 className="text-lg font-bold text-white">Active Plan Share</h3>
-            <p className="text-xs text-muted-foreground font-light mt-0.5">Allocation by subscriber contracts.</p>
-          </div>
-
-          <div className="h-[180px] w-full flex items-center justify-center relative my-4">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={planDistribution}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={70}
-                  paddingAngle={3}
-                  dataKey="value"
-                >
-                  {planDistribution.map((entry) => (
-                    <Cell key={entry.id} fill={entry.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="absolute flex flex-col items-center justify-center">
-              <span className="text-[10px] text-muted-foreground uppercase font-semibold">Active Profiles</span>
-              <span className="text-lg font-extrabold text-white">892</span>
-            </div>
-          </div>
-
-          <div className="space-y-2 mt-4">
-            {planDistribution.map((plan) => (
-              <div key={plan.name} className="flex items-center justify-between text-xs border-b border-white/[0.02] pb-1.5 last:border-b-0 last:pb-0">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: plan.color }}
-                  />
-                  <span className="text-muted-foreground font-medium">{plan.name}</span>
-                </div>
-                <span className="font-bold text-white">{plan.value}%</span>
-              </div>
-            ))}
-          </div>
-          </div>
-        </motion.div>
+          );
+        })}
       </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8 }}
-        className={`relative p-6 bg-card border ${subsTheme.border} rounded-2xl overflow-hidden`}
-      >
-        {/* Top accent bar */}
-        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${subsTheme.topAccent} rounded-t-2xl pointer-events-none`} />
-        {/* Gradient tint */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${subsTheme.bgGlow} pointer-events-none`} />
-        {/* Glow orb */}
-        <div className={`absolute -bottom-8 -right-8 w-48 h-48 bg-gradient-to-br ${subsTheme.bgGlow} rounded-full blur-3xl pointer-events-none`} />
-        
-        <div className="relative z-10">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-lg font-bold text-white">Recent Active Subscriptions</h3>
-            <p className="text-xs text-muted-foreground font-light mt-0.5">Real-time listing of incoming customer plan provisions.</p>
-          </div>
-          <Link to="/tenant/subscriptions" className="flex items-center gap-1 text-xs text-primary font-bold hover:underline">
-            <span>Manage all subscriptions</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/[0.06] text-left text-xs font-semibold text-muted-foreground">
-                <th className="pb-3 pl-4">Customer</th>
-                <th className="pb-3">Email Address</th>
-                <th className="pb-3">Subscribed Plan</th>
-                <th className="pb-3">Billing Value</th>
-                <th className="pb-3 pr-4">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentSubscriptions.map((sub, index) => (
-                <tr
-                  key={index}
-                  className="border-b border-white/[0.02] last:border-b-0 hover:bg-white/[0.01] transition-colors text-xs text-white font-medium animate-fadeIn"
-                >
-                  <td className="py-4 pl-4 flex items-center gap-3 font-semibold">
-                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/[0.08] flex items-center justify-center font-bold text-[11px]">
-                      {sub.customer.split(' ').map(n=>n[0]).join('')}
-                    </div>
-                    <span>{sub.customer}</span>
-                  </td>
-                  <td className="py-4 text-muted-foreground">{sub.email}</td>
-                  <td className="py-4">
-                    <span className="px-2.5 py-1 bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold rounded-lg uppercase tracking-wider">
-                      {sub.plan}
-                    </span>
-                  </td>
-                  <td className="py-4 font-bold">{sub.amount}</td>
-                  <td className="py-4 pr-4">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider border ${
-                        sub.status === "active"
-                          ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                          : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                      }`}
-                    >
-                      {sub.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        </div>
-      </motion.div>
     </motion.div>
   );
 }

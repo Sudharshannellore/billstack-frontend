@@ -1,19 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  Activity, 
-  Database, 
-  Cpu, 
-  Clock, 
-  ArrowUpRight, 
-  Terminal, 
-  Search, 
-  Filter, 
-  CheckCircle, 
+import {
+  Activity,
+  Database,
+  Cpu,
+  Clock,
+  Terminal,
+  Search,
+  CheckCircle,
   AlertTriangle,
   Play,
   Pause,
-  Server
+  RotateCw,
+  MessageSquare,
+  Mail,
+  Radio,
+  Bot
 } from "lucide-react";
 import { 
   AreaChart, 
@@ -52,10 +54,53 @@ const initialEvents = [
   { id: "evt_9377", event: "api_call", customer: "DataHub co", units: 25, status: "success", time: "12 min ago" },
 ];
 
+const OTHER_METERS = [
+  { id: "aiTokens", title: "AI Tokens", value: "2.1M", percent: "42% used", quotaValue: 42, icon: Bot, themeIndex: 3 },
+  { id: "bandwidth", title: "Bandwidth", value: "890 GB", percent: "22% used", quotaValue: 22, icon: Radio, themeIndex: 4 },
+  { id: "sms", title: "SMS", value: "12,400", percent: "8% used", quotaValue: 8, icon: MessageSquare, themeIndex: 5 },
+  { id: "email", title: "Emails", value: "58,200", percent: "19% used", quotaValue: 19, icon: Mail, themeIndex: 0 },
+  { id: "minutes", title: "Voice Minutes", value: "3,240", percent: "27% used", quotaValue: 27, icon: Clock, themeIndex: 1 },
+];
+
+const GRANULARITY_LABELS = { daily: "Daily", weekly: "Weekly", monthly: "Monthly" } as const;
+type Granularity = keyof typeof GRANULARITY_LABELS;
+
 export function Usage() {
   const [selectedMetric, setSelectedMetric] = useState<"apiCalls" | "storage" | "compute">("apiCalls");
   const [events, setEvents] = useState(initialEvents);
   const [isLive, setIsLive] = useState(true);
+  const [granularity, setGranularity] = useState<Granularity>("daily");
+  const [eventQuery, setEventQuery] = useState("");
+  const [showFailedOnly, setShowFailedOnly] = useState(false);
+
+  const chartData = useMemo(() => {
+    if (granularity === "daily") return usageHistory;
+    if (granularity === "weekly") {
+      return [
+        { date: "Wk 1", apiCalls: 42000, storage: 46, compute: 15 },
+        { date: "Wk 2", apiCalls: 61000, storage: 55, compute: 22 },
+        { date: "Wk 3", apiCalls: 78000, storage: 60, compute: 27 },
+        { date: "Wk 4", apiCalls: 95000, storage: 64, compute: 31 },
+      ];
+    }
+    return [
+      { date: "May", apiCalls: 210000, storage: 40, compute: 60 },
+      { date: "Jun", apiCalls: 280000, storage: 52, compute: 82 },
+      { date: "Jul", apiCalls: 340000, storage: 64, compute: 105 },
+    ];
+  }, [granularity]);
+
+  const filteredEvents = useMemo(() => {
+    return events.filter((e) => {
+      if (showFailedOnly && e.status !== "error") return false;
+      if (eventQuery.trim() && !`${e.id} ${e.event} ${e.customer}`.toLowerCase().includes(eventQuery.trim().toLowerCase())) return false;
+      return true;
+    });
+  }, [events, showFailedOnly, eventQuery]);
+
+  const replayEvent = (id: string) => {
+    setEvents((prev) => prev.map((e) => (e.id === id ? { ...e, status: "success" } : e)));
+  };
 
   // Simulate real-time event ingestion
   useEffect(() => {
@@ -205,6 +250,24 @@ export function Usage() {
         })}
       </div>
 
+      {/* Additional meters (read-only summary row) */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {OTHER_METERS.map((meter) => {
+          const t = getCardThemeByIndex(meter.themeIndex);
+          return (
+            <div key={meter.id} className={`relative overflow-hidden p-3 bg-card border ${t.border} rounded-xl`}>
+              <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r ${t.topAccent} pointer-events-none`} />
+              <div className="flex items-center gap-2 mb-1">
+                <meter.icon className={`w-3.5 h-3.5 ${t.iconColor}`} />
+                <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider truncate">{meter.title}</span>
+              </div>
+              <div className="text-sm font-black text-white">{meter.value}</div>
+              <div className="text-[10px] text-muted-foreground">{meter.percent}</div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Main chart section */}
       <motion.div
         layout
@@ -228,11 +291,24 @@ export function Usage() {
               </h3>
               <p className="text-xs text-muted-foreground font-light mt-0.5">Ingestion intervals aggregated by day.</p>
             </div>
-            <span className="text-xs font-semibold text-muted-foreground">{currentDetails.quota}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-muted-foreground">{currentDetails.quota}</span>
+              <div className="flex items-center gap-1 p-1 bg-white/5 rounded-lg border border-white/[0.06]">
+                {(Object.keys(GRANULARITY_LABELS) as Granularity[]).map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => setGranularity(g)}
+                    className={`px-2.5 py-1 text-[10px] font-semibold rounded-md transition-colors ${granularity === g ? "bg-primary/20 text-primary" : "text-muted-foreground hover:text-foreground"}`}
+                  >
+                    {GRANULARITY_LABELS[g]}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <ResponsiveContainer width="100%" height={320}>
-            <AreaChart data={usageHistory}>
+            <AreaChart data={chartData}>
               <defs>
                 <linearGradient id="usageGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor={currentDetails.color} stopOpacity={0.2}/>
@@ -282,17 +358,17 @@ export function Usage() {
               <div>
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
                   <Terminal className={`w-5 h-5 ${ingestionLogTheme.iconColor}`} />
-                  <span>Live Event Ingestion Stream</span>
+                  <span>Usage Explorer</span>
                 </h3>
                 <p className="text-xs text-muted-foreground font-light mt-0.5">Real-time usage API payload logs routed to the billing coordinator.</p>
               </div>
             </div>
 
-            <button 
+            <button
               onClick={() => setIsLive(!isLive)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all ${
-                isLive 
-                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" 
+                isLive
+                  ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
                   : "bg-white/5 border-white/[0.08] text-muted-foreground"
               }`}
             >
@@ -310,6 +386,25 @@ export function Usage() {
             </button>
           </div>
 
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <input
+                value={eventQuery}
+                onChange={(e) => setEventQuery(e.target.value)}
+                placeholder="Search event id, name, customer…"
+                className="w-full pl-9 pr-3 py-2 bg-input-background border border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground outline-none"
+              />
+            </div>
+            <button
+              onClick={() => setShowFailedOnly((v) => !v)}
+              className={`px-3 py-2 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 ${showFailedOnly ? "bg-rose-500/10 border-rose-500/20 text-rose-400" : "bg-transparent border-border text-muted-foreground hover:bg-muted/30"}`}
+            >
+              <AlertTriangle className="w-3.5 h-3.5" />
+              Failed only
+            </button>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -319,13 +414,14 @@ export function Usage() {
                   <th className="pb-3">Customer</th>
                   <th className="pb-3">Value</th>
                   <th className="pb-3">Time</th>
-                  <th className="pb-3 pr-4">Response</th>
+                  <th className="pb-3">Response</th>
+                  <th className="pb-3 pr-4"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.02]">
                 <AnimatePresence initial={false}>
-                  {events.map((event) => (
-                    <motion.tr 
+                  {filteredEvents.map((event) => (
+                    <motion.tr
                       key={event.id}
                       layoutId={event.id}
                       initial={{ opacity: 0, x: -10 }}
@@ -342,15 +438,26 @@ export function Usage() {
                       <td className="py-4">{event.customer}</td>
                       <td className="py-4 font-bold">{event.units} units</td>
                       <td className="py-4 text-muted-foreground">{event.time}</td>
-                      <td className="py-4 pr-4">
+                      <td className="py-4">
                         <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                          event.status === "success" 
-                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" 
+                          event.status === "success"
+                            ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                             : "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                         }`}>
                           {event.status === "success" ? <CheckCircle className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
                           <span>{event.status === "success" ? "200 OK" : "400 BAD"}</span>
                         </span>
+                      </td>
+                      <td className="py-4 pr-4">
+                        {event.status === "error" && (
+                          <button
+                            onClick={() => replayEvent(event.id)}
+                            title="Replay event"
+                            className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+                          >
+                            <RotateCw className="w-3.5 h-3.5 text-cyan-400" />
+                          </button>
+                        )}
                       </td>
                     </motion.tr>
                   ))}

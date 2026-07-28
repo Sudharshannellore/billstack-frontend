@@ -1,5 +1,5 @@
 import { motion } from "motion/react";
-import { Key, Plus, Copy, RotateCw, Trash2, ShieldAlert } from "lucide-react";
+import { Key, Plus, Copy, RotateCw, Trash2, ShieldAlert, BarChart3, Globe, Gauge, CalendarClock } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { getCardThemeByIndex } from "../../components/cardThemes";
@@ -23,6 +23,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "../../components/ui/dialog";
+import type { ApiScope } from "../../types/common";
 
 const SCOPE_OPTIONS = [
   "Read Plans",
@@ -45,7 +46,15 @@ interface ApiKeyRecord {
   environment: Environment;
   created: string;
   lastUsed: string;
+  accessScopes: ApiScope[];
+  ipWhitelist: string;
+  rateLimit: number;
+  expiresAt: string;
+  requestsThisMonth: number;
 }
+
+const ACCESS_SCOPES: ApiScope[] = ["read", "write", "delete", "admin"];
+const requestSeries = [1200, 1800, 1500, 2100, 2600, 2300, 3100, 2800, 3400, 3900, 3600, 4200];
 
 let keyIdCounter = 1000;
 let hexCounter = 0;
@@ -82,6 +91,11 @@ const initialKeys: ApiKeyRecord[] = [
     environment: "Live",
     created: "Jan 15, 2026",
     lastUsed: "2 hours ago",
+    accessScopes: ["read"],
+    ipWhitelist: "203.0.113.5, 198.51.100.0/24",
+    rateLimit: 1000,
+    expiresAt: "Never",
+    requestsThisMonth: 284000,
   },
   {
     id: 2,
@@ -91,6 +105,11 @@ const initialKeys: ApiKeyRecord[] = [
     environment: "Test",
     created: "Feb 3, 2026",
     lastUsed: "5 minutes ago",
+    accessScopes: ["read", "write"],
+    ipWhitelist: "Any",
+    rateLimit: 100,
+    expiresAt: "Dec 31, 2026",
+    requestsThisMonth: 41200,
   },
 ];
 
@@ -101,9 +120,14 @@ export function APIKeys() {
   const [newKeyName, setNewKeyName] = useState("");
   const [newKeyScopes, setNewKeyScopes] = useState<string[]>([]);
   const [newKeyEnv, setNewKeyEnv] = useState<Environment>("Test");
+  const [newAccessScopes, setNewAccessScopes] = useState<ApiScope[]>(["read"]);
+  const [newIpWhitelist, setNewIpWhitelist] = useState("");
+  const [newRateLimit, setNewRateLimit] = useState(100);
+  const [newExpiresAt, setNewExpiresAt] = useState("Never");
 
   const [revealKey, setRevealKey] = useState<{ name: string; key: string } | null>(null);
   const [revokeTarget, setRevokeTarget] = useState<ApiKeyRecord | null>(null);
+  const [analyticsTarget, setAnalyticsTarget] = useState<ApiKeyRecord | null>(null);
 
   const toggleScope = (scope: string) => {
     setNewKeyScopes((prev) =>
@@ -111,10 +135,18 @@ export function APIKeys() {
     );
   };
 
+  const toggleAccessScope = (scope: ApiScope) => {
+    setNewAccessScopes((prev) => (prev.includes(scope) ? prev.filter((s) => s !== scope) : [...prev, scope]));
+  };
+
   const resetGenerateForm = () => {
     setNewKeyName("");
     setNewKeyScopes([]);
     setNewKeyEnv("Test");
+    setNewAccessScopes(["read"]);
+    setNewIpWhitelist("");
+    setNewRateLimit(100);
+    setNewExpiresAt("Never");
   };
 
   const handleGenerate = () => {
@@ -136,6 +168,11 @@ export function APIKeys() {
       environment: newKeyEnv,
       created: "Just now",
       lastUsed: "Never",
+      accessScopes: newAccessScopes.length > 0 ? newAccessScopes : ["read"],
+      ipWhitelist: newIpWhitelist.trim() || "Any",
+      rateLimit: newRateLimit,
+      expiresAt: newExpiresAt,
+      requestsThisMonth: 0,
     };
 
     setApiKeys((prev) => [record, ...prev]);
@@ -234,6 +271,15 @@ export function APIKeys() {
                     variant="outline"
                     size="sm"
                     className="gap-1.5"
+                    onClick={() => setAnalyticsTarget(keyRecord)}
+                  >
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    Analytics
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
                     onClick={() => handleRotate(keyRecord)}
                   >
                     <RotateCw className="w-3.5 h-3.5" />
@@ -267,11 +313,23 @@ export function APIKeys() {
               </div>
 
               <div className="relative z-10 flex items-center gap-2 flex-wrap mt-3">
+                {keyRecord.accessScopes.map((scope) => (
+                  <Badge key={scope} className="font-normal uppercase text-[10px]">
+                    {scope}
+                  </Badge>
+                ))}
                 {keyRecord.scopes.map((scope) => (
                   <Badge key={scope} variant="secondary" className="font-normal">
                     {scope}
                   </Badge>
                 ))}
+              </div>
+
+              <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" />{keyRecord.ipWhitelist}</div>
+                <div className="flex items-center gap-1.5"><Gauge className="w-3.5 h-3.5" />{keyRecord.rateLimit} req/min</div>
+                <div className="flex items-center gap-1.5"><CalendarClock className="w-3.5 h-3.5" />Expires {keyRecord.expiresAt}</div>
+                <div className="flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5" />{keyRecord.requestsThisMonth.toLocaleString()} reqs/mo</div>
               </div>
 
               <div className="relative z-10 text-sm text-muted-foreground mt-3">
@@ -339,6 +397,34 @@ export function APIKeys() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-2">
+              <Label>Access Level</Label>
+              <div className="flex items-center gap-3 flex-wrap">
+                {ACCESS_SCOPES.map((scope) => (
+                  <label key={scope} className="flex items-center gap-2 text-sm cursor-pointer capitalize">
+                    <Checkbox checked={newAccessScopes.includes(scope)} onCheckedChange={() => toggleAccessScope(scope)} />
+                    {scope}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ip-whitelist">IP Whitelist</Label>
+                <Input id="ip-whitelist" placeholder="Any" value={newIpWhitelist} onChange={(e) => setNewIpWhitelist(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rate-limit">Rate Limit (req/min)</Label>
+                <Input id="rate-limit" type="number" value={newRateLimit} onChange={(e) => setNewRateLimit(Number(e.target.value))} />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="expires-at">Expiration</Label>
+              <Input id="expires-at" placeholder="Never" value={newExpiresAt} onChange={(e) => setNewExpiresAt(e.target.value)} />
+            </div>
           </div>
 
           <DialogFooter>
@@ -399,6 +485,38 @@ export function APIKeys() {
               Revoke Key
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Usage analytics dialog */}
+      <Dialog open={!!analyticsTarget} onOpenChange={(open) => !open && setAnalyticsTarget(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              <span>{analyticsTarget?.name} — Usage Analytics</span>
+            </DialogTitle>
+            <DialogDescription>Requests over the last 12 days.</DialogDescription>
+          </DialogHeader>
+          {analyticsTarget && (
+            <div className="space-y-4">
+              <div className="flex items-end gap-1.5 h-24">
+                {requestSeries.map((v, i) => (
+                  <div key={i} className="flex-1 bg-gradient-to-t from-primary to-primary-dark rounded-t" style={{ height: `${(v / Math.max(...requestSeries)) * 100}%` }} />
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="p-3 rounded-lg bg-muted/20 border border-border">
+                  <div className="text-xs text-muted-foreground mb-1">Requests this month</div>
+                  <div className="text-lg font-bold">{analyticsTarget.requestsThisMonth.toLocaleString()}</div>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/20 border border-border">
+                  <div className="text-xs text-muted-foreground mb-1">Last Used</div>
+                  <div className="text-lg font-bold">{analyticsTarget.lastUsed}</div>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </motion.div>

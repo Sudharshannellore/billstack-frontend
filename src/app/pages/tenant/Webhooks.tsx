@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Webhook,
@@ -10,6 +10,12 @@ import {
   CheckCircle2,
   XCircle,
   Activity,
+  RotateCw,
+  KeyRound,
+  Eye,
+  Search,
+  AlertOctagon,
+  BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getCardThemeByIndex } from "../../components/cardThemes";
@@ -57,9 +63,11 @@ interface DeliveryLogEntry {
   id: number;
   webhookUrl: string;
   event: string;
-  status: "delivered" | "failed";
+  status: "delivered" | "failed" | "dead_letter";
   statusCode: number;
   timestamp: string;
+  attempts: number;
+  payload: string;
 }
 
 const initialWebhooks: WebhookConfig[] = [
@@ -94,6 +102,8 @@ const initialDeliveryLog: DeliveryLogEntry[] = [
     status: "delivered",
     statusCode: 200,
     timestamp: "Jul 28, 2026, 9:12 AM",
+    attempts: 1,
+    payload: '{ "id": "evt_1", "type": "invoice.paid", "data": { "id": "inv_1024", "amount": 9900 } }',
   },
   {
     id: 2,
@@ -102,6 +112,8 @@ const initialDeliveryLog: DeliveryLogEntry[] = [
     status: "delivered",
     statusCode: 200,
     timestamp: "Jul 28, 2026, 8:47 AM",
+    attempts: 1,
+    payload: '{ "id": "evt_2", "type": "customer.created", "data": { "id": "cus_991" } }',
   },
   {
     id: 3,
@@ -110,14 +122,18 @@ const initialDeliveryLog: DeliveryLogEntry[] = [
     status: "failed",
     statusCode: 500,
     timestamp: "Jul 27, 2026, 6:03 PM",
+    attempts: 2,
+    payload: '{ "id": "evt_3", "type": "invoice.payment_failed", "data": { "id": "inv_1019" } }',
   },
   {
     id: 4,
     webhookUrl: "https://staging.acmecorp.com/webhooks/billstack-test",
     event: "topup.completed",
-    status: "failed",
+    status: "dead_letter",
     statusCode: 404,
     timestamp: "Jul 27, 2026, 2:21 PM",
+    attempts: 5,
+    payload: '{ "id": "evt_4", "type": "topup.completed", "data": { "id": "top_552" } }',
   },
   {
     id: 5,
@@ -126,6 +142,8 @@ const initialDeliveryLog: DeliveryLogEntry[] = [
     status: "delivered",
     statusCode: 200,
     timestamp: "Jul 26, 2026, 11:59 AM",
+    attempts: 1,
+    payload: '{ "id": "evt_5", "type": "subscription.created", "data": { "id": "sub_777" } }',
   },
 ];
 
@@ -133,10 +151,46 @@ const emptyForm = { url: "", description: "", events: [] as string[] };
 
 export function Webhooks() {
   const [webhooks, setWebhooks] = useState<WebhookConfig[]>(initialWebhooks);
-  const [deliveryLog] = useState<DeliveryLogEntry[]>(initialDeliveryLog);
+  const [deliveryLog, setDeliveryLog] = useState<DeliveryLogEntry[]>(initialDeliveryLog);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [pingingId, setPingingId] = useState<number | null>(null);
+  const [logQuery, setLogQuery] = useState("");
+  const [logStatusFilter, setLogStatusFilter] = useState<"all" | "delivered" | "failed" | "dead_letter">("all");
+  const [payloadEntry, setPayloadEntry] = useState<DeliveryLogEntry | null>(null);
+  const [newSecret, setNewSecret] = useState<{ url: string; secret: string } | null>(null);
+
+  const filteredLog = useMemo(() => {
+    return deliveryLog.filter((e) => {
+      if (logStatusFilter !== "all" && e.status !== logStatusFilter) return false;
+      if (logQuery.trim() && !`${e.webhookUrl} ${e.event}`.toLowerCase().includes(logQuery.trim().toLowerCase())) return false;
+      return true;
+    });
+  }, [deliveryLog, logQuery, logStatusFilter]);
+
+  const deliveryStats = useMemo(() => {
+    const delivered = deliveryLog.filter((e) => e.status === "delivered").length;
+    const failed = deliveryLog.filter((e) => e.status === "failed").length;
+    const dead = deliveryLog.filter((e) => e.status === "dead_letter").length;
+    const total = deliveryLog.length;
+    return { delivered, failed, dead, successRate: total ? Math.round((delivered / total) * 100) : 0 };
+  }, [deliveryLog]);
+
+  const retryDelivery = (id: number) => {
+    setDeliveryLog((prev) => prev.map((e) => (e.id === id ? { ...e, status: "delivered", statusCode: 200, attempts: e.attempts + 1 } : e)));
+    toast.success("Delivery retried successfully");
+  };
+
+  const replayFromDeadLetter = (id: number) => {
+    setDeliveryLog((prev) => prev.map((e) => (e.id === id ? { ...e, status: "delivered", statusCode: 200 } : e)));
+    toast.success("Event replayed from dead letter queue");
+  };
+
+  const rotateSecret = (webhook: WebhookConfig) => {
+    const secret = `whsec_${Math.random().toString(36).slice(2, 18)}`;
+    setNewSecret({ url: webhook.url, secret });
+    toast.success("Webhook secret rotated");
+  };
 
   const toggleEvent = (eventName: string) => {
     setForm((prev) => ({
@@ -346,6 +400,10 @@ export function Webhooks() {
                           <Send className="w-4 h-4" />
                           <span>Send test ping</span>
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => rotateSecret(webhook)}>
+                          <KeyRound className="w-4 h-4" />
+                          <span>Rotate secret</span>
+                        </DropdownMenuItem>
                         <DropdownMenuItem>
                           <Edit className="w-4 h-4" />
                           <span>Edit</span>
@@ -374,71 +432,178 @@ export function Webhooks() {
       )}
 
       {webhooks.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="relative bg-card border border-border rounded-2xl overflow-hidden"
-        >
-          <div className="p-6 border-b border-border flex items-center gap-3">
-            <div className="w-9 h-9 bg-muted rounded-lg flex items-center justify-center">
-              <Activity className="w-4 h-4 text-muted-foreground" />
-            </div>
-            <div>
-              <h3 className="font-semibold">Delivery Log</h3>
-              <p className="text-sm text-muted-foreground">Recent webhook delivery attempts</p>
-            </div>
+        <>
+          {/* Delivery analytics */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {[
+              { label: "Delivered", value: deliveryStats.delivered, icon: CheckCircle2 },
+              { label: "Failed", value: deliveryStats.failed, icon: XCircle },
+              { label: "Dead Letter", value: deliveryStats.dead, icon: AlertOctagon },
+              { label: "Success Rate", value: `${deliveryStats.successRate}%`, icon: BarChart3 },
+            ].map((stat, i) => {
+              const t = getCardThemeByIndex(i);
+              return (
+                <div key={stat.label} className={`relative overflow-hidden p-4 bg-card border ${t.border} rounded-2xl flex items-center gap-3`}>
+                  <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${t.topAccent} rounded-t-2xl pointer-events-none`} />
+                  <div className={`relative z-10 w-10 h-10 rounded-xl bg-gradient-to-br ${t.iconBg} flex items-center justify-center shrink-0`}>
+                    <stat.icon className={`w-5 h-5 ${t.iconColor}`} />
+                  </div>
+                  <div className="relative z-10">
+                    <div className="text-2xl font-black text-white">{stat.value}</div>
+                    <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">{stat.label}</div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-white/[0.01] border-b border-white/[0.04]">
-                <tr>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Endpoint</th>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Event</th>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Status</th>
-                  <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Timestamp</th>
-                </tr>
-              </thead>
-              <tbody>
-                <AnimatePresence>
-                  {deliveryLog.map((entry, index) => (
-                    <motion.tr
-                      key={entry.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors"
-                    >
-                      <td className="py-3 px-6 font-mono text-xs text-muted-foreground max-w-[240px] truncate">
-                        {entry.webhookUrl}
-                      </td>
-                      <td className="py-3 px-6 font-mono text-xs">{entry.event}</td>
-                      <td className="py-3 px-6">
-                        <span
-                          className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded ${
-                            entry.status === "delivered"
-                              ? "bg-emerald-500/10 text-emerald-400"
-                              : "bg-rose-500/10 text-rose-400"
-                          }`}
-                        >
-                          {entry.status === "delivered" ? (
-                            <CheckCircle2 className="w-3.5 h-3.5" />
-                          ) : (
-                            <XCircle className="w-3.5 h-3.5" />
-                          )}
-                          {entry.status === "delivered" ? "Delivered" : "Failed"} ({entry.statusCode})
-                        </span>
-                      </td>
-                      <td className="py-3 px-6 text-sm text-muted-foreground">{entry.timestamp}</td>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
-              </tbody>
-            </table>
-          </div>
-        </motion.div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="relative bg-card border border-border rounded-2xl overflow-hidden"
+          >
+            <div className="p-6 border-b border-border flex items-center justify-between flex-wrap gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 bg-muted rounded-lg flex items-center justify-center">
+                  <Activity className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <h3 className="font-semibold">Delivery Log</h3>
+                  <p className="text-sm text-muted-foreground">Recent webhook delivery attempts, including retry queue and dead letter events</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    value={logQuery}
+                    onChange={(e) => setLogQuery(e.target.value)}
+                    placeholder="Search endpoint or event…"
+                    className="pl-9 pr-3 py-2 bg-input-background border border-border rounded-lg text-xs outline-none w-48"
+                  />
+                </div>
+                <select
+                  value={logStatusFilter}
+                  onChange={(e) => setLogStatusFilter(e.target.value as typeof logStatusFilter)}
+                  className="px-3 py-2 bg-input-background border border-border rounded-lg text-xs outline-none"
+                >
+                  <option value="all">All statuses</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="failed">Failed (retry queue)</option>
+                  <option value="dead_letter">Dead letter</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-white/[0.01] border-b border-white/[0.04]">
+                  <tr>
+                    <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Endpoint</th>
+                    <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Event</th>
+                    <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Status</th>
+                    <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Attempts</th>
+                    <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground">Timestamp</th>
+                    <th className="text-left py-3 px-6 text-sm font-medium text-muted-foreground text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <AnimatePresence>
+                    {filteredLog.map((entry, index) => (
+                      <motion.tr
+                        key={entry.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="border-b border-border last:border-b-0 hover:bg-muted/30 transition-colors"
+                      >
+                        <td className="py-3 px-6 font-mono text-xs text-muted-foreground max-w-[240px] truncate">
+                          {entry.webhookUrl}
+                        </td>
+                        <td className="py-3 px-6 font-mono text-xs">{entry.event}</td>
+                        <td className="py-3 px-6">
+                          <span
+                            className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs rounded ${
+                              entry.status === "delivered"
+                                ? "bg-emerald-500/10 text-emerald-400"
+                                : entry.status === "dead_letter"
+                                  ? "bg-rose-600/20 text-rose-400"
+                                  : "bg-amber-500/10 text-amber-400"
+                            }`}
+                          >
+                            {entry.status === "delivered" ? (
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            ) : entry.status === "dead_letter" ? (
+                              <AlertOctagon className="w-3.5 h-3.5" />
+                            ) : (
+                              <XCircle className="w-3.5 h-3.5" />
+                            )}
+                            {entry.status === "delivered" ? "Delivered" : entry.status === "dead_letter" ? "Dead Letter" : "Failed"} ({entry.statusCode})
+                          </span>
+                        </td>
+                        <td className="py-3 px-6 text-sm text-muted-foreground">{entry.attempts}</td>
+                        <td className="py-3 px-6 text-sm text-muted-foreground">{entry.timestamp}</td>
+                        <td className="py-3 px-6 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => setPayloadEntry(entry)} title="View payload" className="p-2 hover:bg-muted rounded-lg transition-colors">
+                              <Eye className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                            {entry.status === "failed" && (
+                              <button onClick={() => retryDelivery(entry.id)} title="Retry" className="p-2 hover:bg-muted rounded-lg transition-colors">
+                                <RotateCw className="w-4 h-4 text-cyan-400" />
+                              </button>
+                            )}
+                            {entry.status === "dead_letter" && (
+                              <button onClick={() => replayFromDeadLetter(entry.id)} title="Replay from DLQ" className="p-2 hover:bg-muted rounded-lg transition-colors">
+                                <RotateCw className="w-4 h-4 text-rose-400" />
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </tbody>
+              </table>
+            </div>
+          </motion.div>
+        </>
       )}
+
+      {/* Payload viewer */}
+      <Dialog open={!!payloadEntry} onOpenChange={(open) => !open && setPayloadEntry(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Event Payload</DialogTitle>
+            <DialogDescription>{payloadEntry?.event} · {payloadEntry?.webhookUrl}</DialogDescription>
+          </DialogHeader>
+          <pre className="p-3 bg-background rounded-lg overflow-x-auto text-xs font-mono border border-border">{payloadEntry?.payload}</pre>
+        </DialogContent>
+      </Dialog>
+
+      {/* Secret rotation reveal */}
+      <Dialog open={!!newSecret} onOpenChange={(open) => !open && setNewSecret(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><KeyRound className="w-5 h-5 text-amber-400" />New Signing Secret</DialogTitle>
+            <DialogDescription>
+              For {newSecret?.url}. This secret will only be shown once — update your endpoint's signature verification immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-3 bg-muted/30 rounded-lg font-mono text-sm break-all">{newSecret?.secret}</div>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                if (newSecret) navigator.clipboard.writeText(newSecret.secret);
+                toast.success("Secret copied to clipboard");
+              }}
+            >
+              Copy Secret
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }

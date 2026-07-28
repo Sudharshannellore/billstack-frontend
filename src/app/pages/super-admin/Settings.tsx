@@ -16,6 +16,11 @@ import {
   DatabaseBackup,
   RefreshCw,
   Trash2,
+  Flag,
+  Palette,
+  MapPin,
+  Megaphone,
+  Gauge,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -56,6 +61,7 @@ const tabs = [
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "webhooks", label: "Webhooks", icon: Webhook },
   { id: "data", label: "Data & Backup", icon: DatabaseBackup },
+  { id: "platform", label: "Platform", icon: Flag },
 ];
 
 type MemberRole = "Owner" | "Admin" | "Billing" | "Read-only";
@@ -121,6 +127,43 @@ export function SuperAdminSettings() {
   const [lastBackup, setLastBackup] = useState("Jul 28, 2026, 3:12 AM");
   const [runningBackup, setRunningBackup] = useState(false);
   const [retentionDays, setRetentionDays] = useState("90");
+
+  // Platform: feature flags, white label, regions, quotas, announcements
+  const [featureFlags, setFeatureFlags] = useState({
+    aiInsights: true,
+    usageBasedBilling: true,
+    walletExpiration: false,
+    newPricingEngine: true,
+    customerPortalV2: false,
+  });
+  const [brandName, setBrandName] = useState("BillStack");
+  const [primaryColor, setPrimaryColor] = useState("#8B5CF6");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [regions, setRegions] = useState({
+    "US East": true,
+    "EU West": true,
+    "Asia Pacific": false,
+  });
+  const [defaultQuota, setDefaultQuota] = useState("100000");
+  const [announcement, setAnnouncement] = useState("");
+  const [announcementActive, setAnnouncementActive] = useState(false);
+
+  const toggleFeatureFlag = (key: keyof typeof featureFlags) => {
+    setFeatureFlags((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const toggleRegion = (region: keyof typeof regions) => {
+    setRegions((prev) => ({ ...prev, [region]: !prev[region] }));
+  };
+
+  const publishAnnouncement = () => {
+    if (!announcement.trim()) {
+      toast.error("Enter an announcement message first");
+      return;
+    }
+    setAnnouncementActive(true);
+    toast.success("Announcement published platform-wide");
+  };
 
   const toggle = (key: keyof typeof toggles) => {
     setToggles(prev => ({ ...prev, [key]: !prev[key] }));
@@ -572,6 +615,96 @@ export function SuperAdminSettings() {
                     <SelectItem value="365">365 days</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === "platform" && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <div>
+                <h2 className="text-base font-bold text-white mb-1">Platform Administration</h2>
+                <p className="text-xs text-muted-foreground">Feature flags, white-labeling, regional deployments, quotas, and announcements.</p>
+              </div>
+
+              <div className="p-4 bg-white/[0.01] border border-white/[0.04] rounded-xl space-y-3">
+                <div className="flex items-center gap-2 text-white font-bold text-xs mb-1">
+                  <Flag className="w-4 h-4 text-primary" /> Feature Flags
+                </div>
+                {Object.entries(featureFlags).map(([key, value]) => (
+                  <div key={key} className="flex items-center justify-between py-1.5">
+                    <span className="text-xs text-muted-foreground capitalize">{key.replace(/([A-Z])/g, " $1")}</span>
+                    <Toggle enabled={value} onChange={() => toggleFeatureFlag(key as keyof typeof featureFlags)} />
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-4 bg-white/[0.01] border border-white/[0.04] rounded-xl space-y-3">
+                <div className="flex items-center gap-2 text-white font-bold text-xs mb-1">
+                  <Palette className="w-4 h-4 text-primary" /> White Label
+                </div>
+                <div>
+                  <label className="block text-xs text-muted-foreground mb-1">Brand Name</label>
+                  <input value={brandName} onChange={(e) => setBrandName(e.target.value)} className="w-full px-4 py-2.5 bg-white/[0.02] border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none focus:border-primary/50" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1">Primary Color</label>
+                    <div className="flex items-center gap-2">
+                      <input type="color" value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="w-10 h-10 rounded-lg border border-white/[0.08] bg-transparent" />
+                      <input value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} className="flex-1 px-3 py-2.5 bg-white/[0.02] border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1">Logo URL</label>
+                    <input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://…" className="w-full px-4 py-2.5 bg-white/[0.02] border border-white/[0.08] rounded-xl text-sm text-white focus:outline-none focus:border-primary/50" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white/[0.01] border border-white/[0.04] rounded-xl space-y-3">
+                <div className="flex items-center gap-2 text-white font-bold text-xs mb-1">
+                  <MapPin className="w-4 h-4 text-primary" /> Regional Deployments
+                </div>
+                {Object.entries(regions).map(([region, enabled]) => (
+                  <div key={region} className="flex items-center justify-between py-1.5">
+                    <span className="text-xs text-muted-foreground">{region}</span>
+                    <Toggle enabled={enabled} onChange={() => toggleRegion(region as keyof typeof regions)} />
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-4 bg-white/[0.01] border border-white/[0.04] rounded-xl">
+                <div className="flex items-center gap-2 text-white font-bold text-xs mb-2">
+                  <Gauge className="w-4 h-4 text-primary" /> Default Tenant Quota (API calls/mo)
+                </div>
+                <input
+                  type="number"
+                  value={defaultQuota}
+                  onChange={(e) => setDefaultQuota(e.target.value)}
+                  className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] focus:border-primary/50 rounded-xl text-sm text-white focus:outline-none transition-all"
+                />
+                <p className="text-xs text-muted-foreground mt-2">Applied to newly onboarded tenants; existing tenants keep their current quota.</p>
+              </div>
+
+              <div className="p-4 bg-white/[0.01] border border-white/[0.04] rounded-xl space-y-3">
+                <div className="flex items-center gap-2 text-white font-bold text-xs mb-1">
+                  <Megaphone className="w-4 h-4 text-primary" /> Platform Announcement
+                </div>
+                <textarea
+                  value={announcement}
+                  onChange={(e) => setAnnouncement(e.target.value)}
+                  placeholder="e.g. Scheduled maintenance on Aug 3rd, 2–4 AM UTC."
+                  rows={3}
+                  className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] focus:border-primary/50 rounded-xl text-sm text-white focus:outline-none transition-all resize-none"
+                />
+                {announcementActive && announcement && (
+                  <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs">
+                    Live preview: {announcement}
+                  </div>
+                )}
+                <Button onClick={publishAnnouncement} className="gap-2">
+                  <Megaphone className="w-4 h-4" /> Publish Announcement
+                </Button>
               </div>
             </motion.div>
           )}

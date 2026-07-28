@@ -15,6 +15,8 @@ import {
   Zap,
   Wallet as WalletIcon,
   Webhook,
+  Bell,
+  Bot,
 } from "lucide-react";
 
 const navItems: NavItem[] = [
@@ -33,6 +35,8 @@ const navItems: NavItem[] = [
   { label: "API Docs", path: "/tenant/api-docs", icon: BookOpen },
   { label: "Webhooks", path: "/tenant/webhooks", icon: Webhook },
   { label: "Analytics", path: "/tenant/analytics/revenue", icon: BarChart3 },
+  { label: "Notifications", path: "/tenant/notifications", icon: Bell },
+  { label: "AI Assistant", path: "/tenant/ai-assistant", icon: Bot },
   { label: "Profile", path: "/tenant/profile", icon: User },
 ];
 

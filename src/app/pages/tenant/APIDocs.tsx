@@ -1,6 +1,7 @@
 import { motion } from "motion/react";
-import { BookOpen, Copy, Check, FlaskConical, Radio } from "lucide-react";
+import { BookOpen, Copy, Check, FlaskConical, Radio, Download, Terminal, Send, Webhook, FileJson } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 import { getCardThemeByIndex } from "../../components/cardThemes";
 import { Button } from "../../components/ui/button";
 import {
@@ -321,11 +322,52 @@ const apiSections = [
   },
 ];
 
+const SDKS = [
+  { name: "Node.js", cmd: "npm install @billstack/node" },
+  { name: "Python", cmd: "pip install billstack" },
+  { name: "Go", cmd: "go get github.com/billstack/billstack-go" },
+  { name: "Java", cmd: "implementation 'com.billstack:billstack-java:1.0'" },
+  { name: "PHP", cmd: "composer require billstack/billstack-php" },
+];
+
+const webhookExample = `{
+  "id": "evt_1a2b3c",
+  "type": "invoice.paid",
+  "created": "2026-04-13T10:30:00Z",
+  "data": {
+    "object": {
+      "id": "inv_1024",
+      "customer_id": "cus_xyz789",
+      "amount": 9900,
+      "status": "paid"
+    }
+  }
+}`;
+
+const PLAYGROUND_ENDPOINTS = [
+  { label: "GET /v1/plans", method: "GET", path: "/v1/plans", response: `{ "data": [ { "id": "plan_abc123", "name": "Pro Plan" } ] }` },
+  { label: "GET /v1/customers/:id", method: "GET", path: "/v1/customers/cus_xyz789", response: `{ "id": "cus_xyz789", "email": "customer@example.com" }` },
+  { label: "POST /v1/subscriptions", method: "POST", path: "/v1/subscriptions", response: `{ "id": "sub_def456", "status": "trialing" }` },
+];
+
 export function APIDocs() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState("authentication");
   const [apiVersion, setApiVersion] = useState<"v1" | "v2">("v1");
   const [mode, setMode] = useState<"test" | "live">("test");
+  const [playgroundEndpoint, setPlaygroundEndpoint] = useState(PLAYGROUND_ENDPOINTS[0]);
+  const [playgroundBody, setPlaygroundBody] = useState('{\n  "customer_id": "cus_xyz789"\n}');
+  const [playgroundResponse, setPlaygroundResponse] = useState<string | null>(null);
+  const [playgroundLoading, setPlaygroundLoading] = useState(false);
+
+  const sendPlaygroundRequest = () => {
+    setPlaygroundLoading(true);
+    setPlaygroundResponse(null);
+    setTimeout(() => {
+      setPlaygroundLoading(false);
+      setPlaygroundResponse(playgroundEndpoint.response);
+    }, 700);
+  };
 
   const applyMode = (code: string) =>
     code.replace(/YOUR_API_KEY/g, mode === "live" ? "sk_live_51NxYourLiveKey" : "sk_test_51NxYourTestKey");
@@ -403,6 +445,91 @@ export function APIDocs() {
           {mode === "live" ? "Live" : "Test"} Mode
         </span>{" "}
         — requests use a <code className="font-mono">{mode === "live" ? "sk_live_..." : "sk_test_..."}</code> key.
+      </div>
+
+      {/* Interactive Playground */}
+      <div className={`relative p-5 bg-card border ${getCardThemeByIndex(2).border} rounded-xl overflow-hidden`}>
+        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(2).topAccent} rounded-t-xl pointer-events-none`} />
+        <h3 className="text-lg font-semibold mb-3 flex items-center gap-2"><Terminal className="w-5 h-5 text-muted-foreground" />Interactive Playground</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-3">
+            <select
+              value={playgroundEndpoint.label}
+              onChange={(e) => setPlaygroundEndpoint(PLAYGROUND_ENDPOINTS.find((p) => p.label === e.target.value)!)}
+              className="w-full px-3 py-2 bg-input-background border border-border rounded-lg text-sm outline-none"
+            >
+              {PLAYGROUND_ENDPOINTS.map((p) => (
+                <option key={p.label} value={p.label}>{p.label}</option>
+              ))}
+            </select>
+            <textarea
+              value={playgroundBody}
+              onChange={(e) => setPlaygroundBody(e.target.value)}
+              rows={5}
+              className="w-full px-3 py-2 bg-input-background border border-border rounded-lg text-xs font-mono outline-none"
+            />
+            <button
+              onClick={sendPlaygroundRequest}
+              disabled={playgroundLoading}
+              className="px-4 py-2 bg-gradient-to-r from-primary to-primary-dark rounded-lg text-white text-sm font-medium flex items-center gap-2 shadow-lg shadow-primary/30 disabled:opacity-60"
+            >
+              <Send className="w-4 h-4" />
+              {playgroundLoading ? "Sending…" : "Send Request"}
+            </button>
+          </div>
+          <div>
+            <div className="text-xs text-muted-foreground uppercase font-semibold tracking-wider mb-2">Response</div>
+            <pre className="p-3 bg-background rounded-lg overflow-x-auto text-xs font-mono min-h-[140px] border border-border">
+              {playgroundResponse ?? "// response will appear here"}
+            </pre>
+          </div>
+        </div>
+      </div>
+
+      {/* SDK Downloads + spec links */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className={`relative p-5 bg-card border ${getCardThemeByIndex(3).border} rounded-xl overflow-hidden`}>
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(3).topAccent} rounded-t-xl pointer-events-none`} />
+          <h3 className="text-lg font-semibold mb-3 flex items-center gap-2"><Download className="w-5 h-5 text-muted-foreground" />SDK Downloads</h3>
+          <div className="space-y-2">
+            {SDKS.map((sdk) => (
+              <div key={sdk.name} className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-muted/20 border border-border">
+                <div>
+                  <div className="text-sm font-medium">{sdk.name}</div>
+                  <code className="text-[11px] text-muted-foreground">{sdk.cmd}</code>
+                </div>
+                <button
+                  onClick={() => { navigator.clipboard.writeText(sdk.cmd); toast.success(`${sdk.name} install command copied`); }}
+                  className="p-2 hover:bg-muted rounded-lg transition-colors shrink-0"
+                >
+                  <Copy className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className={`relative p-5 bg-card border ${getCardThemeByIndex(4).border} rounded-xl overflow-hidden space-y-4`}>
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(4).topAccent} rounded-t-xl pointer-events-none`} />
+          <div>
+            <h3 className="text-lg font-semibold mb-3 flex items-center gap-2"><FileJson className="w-5 h-5 text-muted-foreground" />API Specs</h3>
+            <div className="flex flex-wrap gap-2">
+              {["OpenAPI 3.0", "Swagger UI", "Postman Collection"].map((spec) => (
+                <button
+                  key={spec}
+                  onClick={() => toast.info(`${spec} export`, { description: "Mock export — no real file generated." })}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium bg-transparent border border-border text-muted-foreground hover:bg-muted/30 transition-colors"
+                >
+                  {spec}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h3 className="text-sm font-semibold mb-2 flex items-center gap-2"><Webhook className="w-4 h-4 text-muted-foreground" />Webhook Payload Example</h3>
+            <pre className="p-3 bg-background rounded-lg overflow-x-auto text-xs font-mono border border-border">{webhookExample}</pre>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

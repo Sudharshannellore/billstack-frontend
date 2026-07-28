@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
-import { Plus, CreditCard, MoreVertical, Edit, Copy, Trash2, History, CheckCircle, ListChecks, TrendingUp, TrendingDown } from "lucide-react";
-import { useState } from "react";
+import { Plus, CreditCard, MoreVertical, Edit, Copy, Trash2, History, CheckCircle, ListChecks, TrendingUp, TrendingDown, Search, Calculator, Scale, Eye } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { getCardThemeByIndex } from "../../components/cardThemes";
@@ -12,6 +12,8 @@ import {
   DialogDescription,
 } from "../../components/ui/dialog";
 import { Switch } from "../../components/ui/switch";
+import { BulkActionsBar } from "../../components/BulkActionsBar";
+import type { BillingModel, BillingInterval } from "../../types/common";
 
 interface PlanVersion {
   version: number;
@@ -20,12 +22,32 @@ interface PlanVersion {
   note: string;
 }
 
+export const BILLING_MODEL_LABELS: Record<BillingModel, string> = {
+  flat_rate: "Flat Rate",
+  usage_based: "Usage Based",
+  tiered: "Tiered",
+  volume: "Volume",
+  hybrid: "Hybrid",
+  seat_based: "Seat Based",
+  wallet: "Wallet",
+  telecom: "Telecom",
+  one_time: "One-Time",
+  marketplace_commission: "Marketplace Commission",
+};
+
+const BILLING_MODELS = Object.keys(BILLING_MODEL_LABELS) as BillingModel[];
+
 const plans = [
   {
     id: 1,
     name: "Starter",
     product: "Cloud Storage API",
     type: "Subscription",
+    billingModel: "flat_rate" as BillingModel,
+    interval: "monthly" as BillingInterval,
+    effectiveDate: "Jan 1, 2026",
+    basePrice: 29,
+    unitPrice: 0,
     price: "₹29/month",
     customers: 156,
     customerTrend: 8.4,
@@ -47,6 +69,11 @@ const plans = [
     name: "Pro",
     product: "Cloud Storage API",
     type: "Hybrid",
+    billingModel: "hybrid" as BillingModel,
+    interval: "monthly" as BillingInterval,
+    effectiveDate: "Mar 1, 2026",
+    basePrice: 99,
+    unitPrice: 0.01,
     price: "₹99/month + usage",
     customers: 89,
     customerTrend: -3.2,
@@ -69,6 +96,11 @@ const plans = [
     name: "Pay as you go",
     product: "Analytics Platform",
     type: "Usage-based",
+    billingModel: "usage_based" as BillingModel,
+    interval: "custom" as BillingInterval,
+    effectiveDate: "Feb 10, 2026",
+    basePrice: 0,
+    unitPrice: 0.05,
     price: "₹0.05/query",
     customers: 234,
     customerTrend: 15.7,
@@ -90,6 +122,11 @@ const plans = [
     name: "Enterprise",
     product: "Cloud Storage API",
     type: "Subscription",
+    billingModel: "seat_based" as BillingModel,
+    interval: "annual" as BillingInterval,
+    effectiveDate: "May 15, 2026",
+    basePrice: 499,
+    unitPrice: 25,
     price: "₹499/month",
     customers: 23,
     customerTrend: -1.5,
@@ -130,10 +167,52 @@ export function Plans() {
   const [showMenu, setShowMenu] = useState<number | null>(null);
   const [historyPlanId, setHistoryPlanId] = useState<number | null>(null);
   const [featuresPlanId, setFeaturesPlanId] = useState<number | null>(null);
+  const [previewPlanId, setPreviewPlanId] = useState<number | null>(null);
+  const [calculatorPlanId, setCalculatorPlanId] = useState<number | null>(null);
+  const [calcQuantity, setCalcQuantity] = useState(100);
+  const [query, setQuery] = useState("");
+  const [modelFilter, setModelFilter] = useState<BillingModel | "all">("all");
+  const [selected, setSelected] = useState<number[]>([]);
+  const [compareOpen, setCompareOpen] = useState(false);
   const navigate = useNavigate();
 
   const historyPlan = plansList.find((p) => p.id === historyPlanId) ?? null;
   const featuresPlan = plansList.find((p) => p.id === featuresPlanId) ?? null;
+  const previewPlan = plansList.find((p) => p.id === previewPlanId) ?? null;
+  const calculatorPlan = plansList.find((p) => p.id === calculatorPlanId) ?? null;
+  const comparePlans = plansList.filter((p) => selected.includes(p.id));
+
+  const filteredPlans = useMemo(() => {
+    return plansList.filter((p) => {
+      if (modelFilter !== "all" && p.billingModel !== modelFilter) return false;
+      if (query.trim() && !`${p.name} ${p.product}`.toLowerCase().includes(query.trim().toLowerCase())) return false;
+      return true;
+    });
+  }, [plansList, modelFilter, query]);
+
+  const toggleSelect = (id: number) => {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  };
+
+  const estimateCost = (plan: (typeof plans)[number], quantity: number) => {
+    switch (plan.billingModel) {
+      case "usage_based":
+        return plan.unitPrice * quantity;
+      case "hybrid":
+        return plan.basePrice + plan.unitPrice * quantity;
+      case "seat_based":
+        return plan.basePrice + plan.unitPrice * Math.max(0, quantity - 1);
+      case "tiered": {
+        const tier1 = Math.min(quantity, 100) * plan.unitPrice;
+        const tier2 = Math.max(0, quantity - 100) * plan.unitPrice * 0.5;
+        return plan.basePrice + tier1 + tier2;
+      }
+      case "volume":
+        return quantity > 500 ? quantity * plan.unitPrice * 0.7 : quantity * plan.unitPrice;
+      default:
+        return plan.basePrice;
+    }
+  };
 
   const handleDelete = (name: string) => {
     setShowMenu(null);
@@ -165,20 +244,59 @@ export function Plans() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold mb-2">Plans</h1>
           <p className="text-muted-foreground">Manage pricing plans for your products</p>
         </div>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate("/tenant/plans/create")}
-          className="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark rounded-lg text-white font-medium shadow-lg shadow-primary/30 flex items-center gap-2"
+        <div className="flex items-center gap-3">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              if (selected.length < 2) {
+                toast.info("Select at least 2 plans to compare");
+                return;
+              }
+              setCompareOpen(true);
+            }}
+            className="px-5 py-3 bg-transparent border border-border rounded-lg text-foreground font-medium flex items-center gap-2 hover:bg-muted/30 transition-colors"
+          >
+            <Scale className="w-5 h-5" />
+            <span>Compare</span>
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => navigate("/tenant/plans/create")}
+            className="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark rounded-lg text-white font-medium shadow-lg shadow-primary/30 flex items-center gap-2"
+          >
+            <Plus className="w-5 h-5" />
+            <span>Create Plan</span>
+          </motion.button>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search plans or products…"
+            className="w-full pl-9 pr-3 py-2 bg-input-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none transition-[color,box-shadow]"
+          />
+        </div>
+        <select
+          value={modelFilter}
+          onChange={(e) => setModelFilter(e.target.value as BillingModel | "all")}
+          className="px-3 py-2 bg-input-background border border-border rounded-lg text-sm text-foreground outline-none"
         >
-          <Plus className="w-5 h-5" />
-          <span>Create Plan</span>
-        </motion.button>
+          <option value="all">All billing models</option>
+          {BILLING_MODELS.map((m) => (
+            <option key={m} value={m}>{BILLING_MODEL_LABELS[m]}</option>
+          ))}
+        </select>
       </div>
 
       <motion.div
@@ -197,6 +315,18 @@ export function Plans() {
           <table className="w-full">
             <thead className="bg-white/[0.01] border-b border-white/[0.04]">
             <tr>
+              <th className="py-4 px-6 w-10">
+                <input
+                  type="checkbox"
+                  checked={filteredPlans.length > 0 && filteredPlans.every((p) => selected.includes(p.id))}
+                  onChange={() => {
+                    const ids = filteredPlans.map((p) => p.id);
+                    const allSelected = ids.every((id) => selected.includes(id));
+                    setSelected(allSelected ? selected.filter((id) => !ids.includes(id)) : [...new Set([...selected, ...ids])]);
+                  }}
+                  className="rounded border-border accent-[var(--color-primary)]"
+                />
+              </th>
               <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
                 Plan Name
               </th>
@@ -204,7 +334,10 @@ export function Plans() {
                 Product
               </th>
               <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                Type
+                Billing Model
+              </th>
+              <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
+                Interval
               </th>
               <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
                 Price
@@ -227,7 +360,7 @@ export function Plans() {
             </tr>
           </thead>
           <tbody>
-            {plansList.map((plan, index) => (
+            {filteredPlans.map((plan, index) => (
               <motion.tr
                 key={plan.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -235,6 +368,14 @@ export function Plans() {
                 transition={{ delay: index * 0.1 }}
                 className="border-b border-border hover:bg-muted/30 transition-colors group"
               >
+                <td className="py-4 px-6" onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(plan.id)}
+                    onChange={() => toggleSelect(plan.id)}
+                    className="rounded border-border accent-[var(--color-primary)]"
+                  />
+                </td>
                 <td className="py-4 px-6">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary-dark/20 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -253,9 +394,10 @@ export function Plans() {
                 <td className="py-4 px-6 text-muted-foreground">{plan.product}</td>
                 <td className="py-4 px-6">
                   <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded">
-                    {plan.type}
+                    {BILLING_MODEL_LABELS[plan.billingModel]}
                   </span>
                 </td>
+                <td className="py-4 px-6 text-muted-foreground text-xs capitalize">{plan.interval}</td>
                 <td className="py-4 px-6 font-medium">{plan.price}</td>
                 <td className="py-4 px-6 text-muted-foreground">
                   <div className="flex items-center gap-1.5">
@@ -307,8 +449,29 @@ export function Plans() {
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
+                      onClick={() => setPreviewPlanId(plan.id)}
+                      title="Preview"
+                      className="p-2 hover:bg-muted rounded-lg transition-colors"
+                    >
+                      <Eye className="w-4 h-4 text-muted-foreground" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => {
+                        setCalcQuantity(100);
+                        setCalculatorPlanId(plan.id);
+                      }}
+                      title="Price Calculator"
+                      className="p-2 hover:bg-muted rounded-lg transition-colors"
+                    >
+                      <Calculator className="w-4 h-4 text-muted-foreground" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => handleDuplicate(plan.id)}
-                      title="Duplicate"
+                      title="Clone plan"
                       className="p-2 hover:bg-muted rounded-lg transition-colors"
                     >
                       <Copy className="w-4 h-4 text-muted-foreground" />
@@ -416,6 +579,149 @@ export function Plans() {
           </ul>
         </DialogContent>
       </Dialog>
+
+      {/* Plan Preview Dialog — customer-facing card */}
+      <Dialog open={previewPlanId !== null} onOpenChange={(open) => !open && setPreviewPlanId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-5 h-5 text-primary" />
+              <span>Plan Preview</span>
+            </DialogTitle>
+            <DialogDescription>What customers see on the pricing page.</DialogDescription>
+          </DialogHeader>
+          {previewPlan && (
+            <div className="p-6 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/10 via-transparent to-transparent">
+              <div className="text-xs font-bold uppercase tracking-wider text-primary mb-2">{BILLING_MODEL_LABELS[previewPlan.billingModel]}</div>
+              <div className="text-2xl font-black text-white mb-1">{previewPlan.name}</div>
+              <div className="text-lg font-bold text-foreground mb-1">{previewPlan.price}</div>
+              <div className="text-xs text-muted-foreground mb-4 capitalize">Billed {previewPlan.interval} · Effective {previewPlan.effectiveDate}</div>
+              <ul className="space-y-2">
+                {previewPlan.features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2 text-sm">
+                    <CheckCircle className="w-4 h-4 text-success mt-0.5 shrink-0" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Price Calculator Dialog — real-time simulator */}
+      <Dialog open={calculatorPlanId !== null} onOpenChange={(open) => !open && setCalculatorPlanId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calculator className="w-5 h-5 text-primary" />
+              <span>{calculatorPlan?.name} — Price Calculator</span>
+            </DialogTitle>
+            <DialogDescription>Simulate the estimated cost based on usage/seats.</DialogDescription>
+          </DialogHeader>
+          {calculatorPlan && (
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="text-muted-foreground">
+                    {calculatorPlan.billingModel === "seat_based" ? "Seats" : "Units / calls"}
+                  </span>
+                  <span className="font-bold">{calcQuantity}</span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={1000}
+                  value={calcQuantity}
+                  onChange={(e) => setCalcQuantity(Number(e.target.value))}
+                  className="w-full accent-primary"
+                />
+              </div>
+              <div className="p-4 rounded-xl border border-border bg-muted/20 flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Estimated cost</span>
+                <span className="text-2xl font-black text-primary">
+                  ₹{estimateCost(calculatorPlan, calcQuantity).toLocaleString("en-IN", { maximumFractionDigits: 2 })}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Estimate only — actual invoiced amount may vary with proration, taxes, and pricing rules.
+              </p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Compare Plans Dialog */}
+      <Dialog open={compareOpen} onOpenChange={setCompareOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Scale className="w-5 h-5 text-primary" />
+              <span>Compare Plans</span>
+            </DialogTitle>
+            <DialogDescription>Side-by-side comparison of selected plans.</DialogDescription>
+          </DialogHeader>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <tbody>
+                <tr className="border-b border-border">
+                  <td className="py-2 pr-4 text-muted-foreground font-medium">Plan</td>
+                  {comparePlans.map((p) => <td key={p.id} className="py-2 px-3 font-bold">{p.name}</td>)}
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="py-2 pr-4 text-muted-foreground font-medium">Billing Model</td>
+                  {comparePlans.map((p) => <td key={p.id} className="py-2 px-3">{BILLING_MODEL_LABELS[p.billingModel]}</td>)}
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="py-2 pr-4 text-muted-foreground font-medium">Interval</td>
+                  {comparePlans.map((p) => <td key={p.id} className="py-2 px-3 capitalize">{p.interval}</td>)}
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="py-2 pr-4 text-muted-foreground font-medium">Price</td>
+                  {comparePlans.map((p) => <td key={p.id} className="py-2 px-3 font-bold text-primary">{p.price}</td>)}
+                </tr>
+                <tr className="border-b border-border">
+                  <td className="py-2 pr-4 text-muted-foreground font-medium">Customers</td>
+                  {comparePlans.map((p) => <td key={p.id} className="py-2 px-3">{p.customers}</td>)}
+                </tr>
+                <tr>
+                  <td className="py-2 pr-4 text-muted-foreground font-medium align-top">Features</td>
+                  {comparePlans.map((p) => (
+                    <td key={p.id} className="py-2 px-3 align-top">
+                      <ul className="space-y-1">
+                        {p.features.map((f) => (
+                          <li key={f} className="flex items-start gap-1.5 text-xs">
+                            <CheckCircle className="w-3 h-3 text-success mt-0.5 shrink-0" />
+                            <span>{f}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <BulkActionsBar
+        count={selected.length}
+        onClear={() => setSelected([])}
+        actions={[
+          {
+            label: "Compare",
+            icon: Scale,
+            onClick: () => {
+              if (selected.length < 2) {
+                toast.info("Select at least 2 plans to compare");
+                return;
+              }
+              setCompareOpen(true);
+            },
+          },
+        ]}
+      />
     </motion.div>
   );
 }

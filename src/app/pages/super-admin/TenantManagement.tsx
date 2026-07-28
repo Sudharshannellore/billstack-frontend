@@ -17,13 +17,21 @@ import {
   DialogFooter,
 } from "../../components/ui/dialog";
 
+type TenantHealth = "healthy" | "at_risk" | "critical";
+
+const HEALTH_STYLES: Record<TenantHealth, { dot: string; label: string }> = {
+  healthy: { dot: "bg-emerald-500", label: "Healthy" },
+  at_risk: { dot: "bg-amber-500", label: "At Risk" },
+  critical: { dot: "bg-rose-500", label: "Critical" },
+};
+
 const allTenants = [
-  { id: 1, name: "Acme Corp", email: "admin@acme.com", status: "active", revenue: "₹28.5K", users: 245, joined: "Jan 15, 2026", plan: "Enterprise", growth: "+12%" },
-  { id: 2, name: "TechFlow", email: "team@techflow.io", status: "active", revenue: "₹24.2K", users: 189, joined: "Feb 3, 2026", plan: "SaaS Starter", growth: "+8%" },
-  { id: 3, name: "DataHub", email: "hello@datahub.co", status: "active", revenue: "₹18.9K", users: 156, joined: "Mar 8, 2026", plan: "API Usage", growth: "+21%" },
-  { id: 4, name: "CloudSync", email: "info@cloudsync.com", status: "pending", revenue: "₹0", users: 0, joined: "Apr 10, 2026", plan: "—", growth: "" },
-  { id: 5, name: "DevTools Inc", email: "team@devtools.io", status: "pending", revenue: "₹0", users: 0, joined: "Apr 12, 2026", plan: "—", growth: "" },
-  { id: 6, name: "API Master", email: "contact@apimaster.com", status: "pending", revenue: "₹0", users: 0, joined: "Apr 13, 2026", plan: "—", growth: "" },
+  { id: 1, name: "Acme Corp", email: "admin@acme.com", status: "active", revenue: "₹28.5K", users: 245, joined: "Jan 15, 2026", plan: "Enterprise", growth: "+12%", health: "healthy" as TenantHealth, quotaUsed: 62 },
+  { id: 2, name: "TechFlow", email: "team@techflow.io", status: "active", revenue: "₹24.2K", users: 189, joined: "Feb 3, 2026", plan: "SaaS Starter", growth: "+8%", health: "healthy" as TenantHealth, quotaUsed: 41 },
+  { id: 3, name: "DataHub", email: "hello@datahub.co", status: "active", revenue: "₹18.9K", users: 156, joined: "Mar 8, 2026", plan: "API Usage", growth: "+21%", health: "at_risk" as TenantHealth, quotaUsed: 88 },
+  { id: 4, name: "CloudSync", email: "info@cloudsync.com", status: "pending", revenue: "₹0", users: 0, joined: "Apr 10, 2026", plan: "—", growth: "", health: "healthy" as TenantHealth, quotaUsed: 0 },
+  { id: 5, name: "DevTools Inc", email: "team@devtools.io", status: "pending", revenue: "₹0", users: 0, joined: "Apr 12, 2026", plan: "—", growth: "", health: "healthy" as TenantHealth, quotaUsed: 0 },
+  { id: 6, name: "API Master", email: "contact@apimaster.com", status: "pending", revenue: "₹0", users: 0, joined: "Apr 13, 2026", plan: "—", growth: "", health: "healthy" as TenantHealth, quotaUsed: 0 },
 ];
 
 export function TenantManagement() {
@@ -241,6 +249,8 @@ export function TenantManagement() {
                     <th className="py-3 px-4">Revenue</th>
                     <th className="py-3 px-4">Users</th>
                     <th className="py-3 px-4">Growth</th>
+                    <th className="py-3 px-4">Health</th>
+                    <th className="py-3 px-4">Quota</th>
                   </>
                 )}
                 <th className="py-3 px-4">Joined</th>
@@ -295,6 +305,21 @@ export function TenantManagement() {
                           <td className="py-4 px-4 text-sm text-muted-foreground">{tenant.users.toLocaleString()}</td>
                           <td className="py-4 px-4">
                             <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">{tenant.growth}</span>
+                          </td>
+                          <td className="py-4 px-4">
+                            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <span className={`w-2 h-2 rounded-full ${HEALTH_STYLES[tenant.health].dot}`} />
+                              {HEALTH_STYLES[tenant.health].label}
+                            </span>
+                          </td>
+                          <td className="py-4 px-4 w-28">
+                            <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${tenant.quotaUsed > 80 ? "bg-rose-500" : tenant.quotaUsed > 60 ? "bg-amber-500" : "bg-emerald-500"}`}
+                                style={{ width: `${tenant.quotaUsed}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] text-muted-foreground">{tenant.quotaUsed}% used</span>
                           </td>
                         </>
                       )}

@@ -1,9 +1,22 @@
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Ticket, MoreVertical, Edit, Trash2, Copy, Power, PowerOff } from "lucide-react";
-import { useState } from "react";
+import { Plus, Ticket, MoreVertical, Edit, Trash2, Copy, Power, PowerOff, BarChart3, ShieldCheck, Gift } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { getCardThemeByIndex } from "../../components/cardThemes";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "../../components/ui/dialog";
+import type { CouponType } from "../../types/common";
+
+export const COUPON_TYPE_LABELS: Record<CouponType, string> = {
+  percentage: "Percentage",
+  fixed: "Fixed Amount",
+  referral: "Referral",
+  free_trial: "Free Trial",
+  first_invoice: "First Invoice",
+  campaign: "Campaign",
+};
 
 // Fixed "today" reference date for mock day-count calculations (no real backend/date lib needed)
 const TODAY = new Date("2026-07-28");
@@ -32,39 +45,94 @@ const initialCoupons = [
     id: 1,
     name: "Welcome Pack",
     code: "WELCOME50",
-    type: "percentage",
+    type: "percentage" as CouponType,
     value: "50%",
     usage: "124/500",
     expiry: "Dec 31, 2026",
     status: "active",
+    minPurchase: "₹500",
+    maxDiscount: "₹250",
+    eligibility: "New customers",
+    countries: ["India", "US"],
   },
   {
     id: 2,
     name: "Summer Sale",
     code: "SUMMER100",
-    type: "fixed",
+    type: "fixed" as CouponType,
     value: "₹100",
     usage: "45/100",
     expiry: "Aug 15, 2026",
     status: "active",
+    minPurchase: "₹300",
+    maxDiscount: "₹100",
+    eligibility: "All customers",
+    countries: ["All"],
   },
   {
     id: 3,
     name: "Black Friday",
     code: "BLACKFRIDAY",
-    type: "percentage",
+    type: "campaign" as CouponType,
     value: "75%",
     usage: "0/1000",
     expiry: "Nov 30, 2026",
     status: "draft",
+    minPurchase: "None",
+    maxDiscount: "₹1,000",
+    eligibility: "All customers",
+    countries: ["All"],
+  },
+  {
+    id: 4,
+    name: "Referral Reward",
+    code: "REFER20",
+    type: "referral" as CouponType,
+    value: "20%",
+    usage: "312/∞",
+    expiry: "Dec 31, 2026",
+    status: "active",
+    minPurchase: "None",
+    maxDiscount: "₹200",
+    eligibility: "Referred customers",
+    countries: ["All"],
+  },
+  {
+    id: 5,
+    name: "14-Day Trial Extension",
+    code: "TRIAL14",
+    type: "free_trial" as CouponType,
+    value: "14 days",
+    usage: "88/500",
+    expiry: "Oct 1, 2026",
+    status: "active",
+    minPurchase: "None",
+    maxDiscount: "N/A",
+    eligibility: "Trial customers",
+    countries: ["All"],
   },
 ];
+
+// Mock daily redemption counts for the analytics dialog sparkline bars.
+const mockRedemptionSeries = [4, 7, 5, 9, 12, 8, 14, 11, 16, 13, 18, 15];
 
 export function Coupons() {
   const theme = getCardThemeByIndex(3);
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState<number | null>(null);
   const [couponsList, setCouponsList] = useState(initialCoupons);
+  const [typeFilter, setTypeFilter] = useState<CouponType | "all">("all");
+  const [restrictionsId, setRestrictionsId] = useState<number | null>(null);
+  const [analyticsId, setAnalyticsId] = useState<number | null>(null);
+
+  const filteredCoupons = useMemo(
+    () => (typeFilter === "all" ? couponsList : couponsList.filter((c) => c.type === typeFilter)),
+    [couponsList, typeFilter],
+  );
+
+  const restrictionsCoupon = couponsList.find((c) => c.id === restrictionsId) ?? null;
+  const analyticsCoupon = couponsList.find((c) => c.id === analyticsId) ?? null;
+  const totalRedemptions = couponsList.reduce((sum, c) => sum + (parseUsage(c.usage).used || 0), 0);
 
   const handleDuplicate = (coupon: (typeof initialCoupons)[number]) => {
     const newCoupon = {
@@ -110,6 +178,47 @@ export function Coupons() {
         </motion.button>
       </div>
 
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: "Total Coupons", value: couponsList.length, icon: Ticket },
+          { label: "Active", value: couponsList.filter((c) => c.status === "active").length, icon: Power },
+          { label: "Total Redemptions", value: totalRedemptions, icon: BarChart3 },
+          { label: "Referral Coupons", value: couponsList.filter((c) => c.type === "referral").length, icon: Gift },
+        ].map((stat, i) => {
+          const t = getCardThemeByIndex(i);
+          return (
+            <div key={stat.label} className={`relative overflow-hidden p-4 bg-card border ${t.border} rounded-2xl flex items-center gap-3`}>
+              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${t.topAccent} rounded-t-2xl pointer-events-none`} />
+              <div className={`relative z-10 w-10 h-10 rounded-xl bg-gradient-to-br ${t.iconBg} flex items-center justify-center shrink-0`}>
+                <stat.icon className={`w-5 h-5 ${t.iconColor}`} />
+              </div>
+              <div className="relative z-10">
+                <div className="text-2xl font-black text-white">{stat.value}</div>
+                <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">{stat.label}</div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          onClick={() => setTypeFilter("all")}
+          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${typeFilter === "all" ? "bg-primary/10 text-primary border border-primary/20" : "bg-transparent border border-border text-muted-foreground hover:bg-muted/30"}`}
+        >
+          All Types
+        </button>
+        {(Object.entries(COUPON_TYPE_LABELS) as [CouponType, string][]).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setTypeFilter(key)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${typeFilter === key ? "bg-primary/10 text-primary border border-primary/20" : "bg-transparent border border-border text-muted-foreground hover:bg-muted/30"}`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -150,7 +259,7 @@ export function Coupons() {
             </tr>
           </thead>
           <tbody>
-            {couponsList.map((coupon, index) => (
+            {filteredCoupons.map((coupon, index) => (
               <motion.tr
                 key={coupon.id}
                 initial={{ opacity: 0, x: -20 }}
@@ -171,7 +280,10 @@ export function Coupons() {
                     {coupon.code}
                   </span>
                 </td>
-                <td className="py-4 px-6 font-bold text-primary">{coupon.value}</td>
+                <td className="py-4 px-6">
+                  <div className="font-bold text-primary">{coupon.value}</div>
+                  <div className="text-[10px] text-muted-foreground uppercase font-medium tracking-wide">{COUPON_TYPE_LABELS[coupon.type]}</div>
+                </td>
                 <td className="py-4 px-6">
                   {(() => {
                     const { used, total, pct } = parseUsage(coupon.usage);
@@ -241,6 +353,24 @@ export function Coupons() {
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
+                      onClick={() => setRestrictionsId(coupon.id)}
+                      title="Restrictions"
+                      className="p-2 hover:bg-muted rounded-lg transition-colors"
+                    >
+                      <ShieldCheck className="w-4 h-4 text-muted-foreground" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => setAnalyticsId(coupon.id)}
+                      title="Analytics"
+                      className="p-2 hover:bg-muted rounded-lg transition-colors"
+                    >
+                      <BarChart3 className="w-4 h-4 text-muted-foreground" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
                       onClick={() => handleDuplicate(coupon)}
                       title="Duplicate"
                       className="p-2 hover:bg-muted rounded-lg transition-colors"
@@ -291,6 +421,61 @@ export function Coupons() {
         </table>
         </div>
       </motion.div>
+
+      {/* Restrictions Dialog */}
+      <Dialog open={restrictionsId !== null} onOpenChange={(open) => !open && setRestrictionsId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-primary" />
+              <span>{restrictionsCoupon?.name} — Restrictions</span>
+            </DialogTitle>
+            <DialogDescription>Eligibility and usage limits for this coupon.</DialogDescription>
+          </DialogHeader>
+          {restrictionsCoupon && (
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div><div className="text-muted-foreground text-xs mb-1">Minimum Purchase</div><div className="font-medium">{restrictionsCoupon.minPurchase}</div></div>
+              <div><div className="text-muted-foreground text-xs mb-1">Maximum Discount</div><div className="font-medium">{restrictionsCoupon.maxDiscount}</div></div>
+              <div><div className="text-muted-foreground text-xs mb-1">Customer Eligibility</div><div className="font-medium">{restrictionsCoupon.eligibility}</div></div>
+              <div><div className="text-muted-foreground text-xs mb-1">Countries</div><div className="font-medium">{restrictionsCoupon.countries.join(", ")}</div></div>
+              <div><div className="text-muted-foreground text-xs mb-1">Expiration</div><div className="font-medium">{restrictionsCoupon.expiry}</div></div>
+              <div><div className="text-muted-foreground text-xs mb-1">Usage Limit</div><div className="font-medium">{restrictionsCoupon.usage.split("/")[1]}</div></div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Analytics Dialog */}
+      <Dialog open={analyticsId !== null} onOpenChange={(open) => !open && setAnalyticsId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-primary" />
+              <span>{analyticsCoupon?.name} — Analytics</span>
+            </DialogTitle>
+            <DialogDescription>Redemption activity over the last 12 days.</DialogDescription>
+          </DialogHeader>
+          {analyticsCoupon && (
+            <div className="space-y-4">
+              <div className="flex items-end gap-1.5 h-24">
+                {mockRedemptionSeries.map((v, i) => (
+                  <div key={i} className="flex-1 bg-gradient-to-t from-primary to-primary-dark rounded-t" style={{ height: `${(v / Math.max(...mockRedemptionSeries)) * 100}%` }} />
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="p-3 rounded-lg bg-muted/20 border border-border">
+                  <div className="text-xs text-muted-foreground mb-1">Total Redemptions</div>
+                  <div className="text-lg font-bold">{parseUsage(analyticsCoupon.usage).used}</div>
+                </div>
+                <div className="p-3 rounded-lg bg-muted/20 border border-border">
+                  <div className="text-xs text-muted-foreground mb-1">Utilization</div>
+                  <div className="text-lg font-bold">{parseUsage(analyticsCoupon.usage).pct.toFixed(1)}%</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
