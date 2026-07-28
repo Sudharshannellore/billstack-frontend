@@ -3,7 +3,7 @@ import { StatCard } from "../../components/StatCard";
 import { getCardThemeByIndex } from "../../components/cardThemes";
 import { 
   Building2, 
-  DollarSign, 
+  IndianRupee, 
   TrendingUp, 
   Users, 
   Sparkles,
@@ -124,10 +124,10 @@ export function SuperAdminDashboard() {
         />
         <StatCard
           title="Platform Revenue"
-          value="$285K"
+          value="₹285K"
           change="+23%"
           changeType="positive"
-          icon={DollarSign}
+          icon={IndianRupee}
           delay={0.1}
           colorIndex={1}
         />

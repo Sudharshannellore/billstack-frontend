@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "motion/react";
 import {
   Building2, Check, X, Plus, MoreVertical, Search,
-  Users, DollarSign, Calendar, ChevronRight, Shield,
+  Users, Calendar, ChevronRight, Shield,
   TrendingUp, AlertCircle, CheckCircle2, Clock, LogIn, ShieldAlert
 } from "lucide-react";
 import { useState } from "react";
@@ -18,12 +18,12 @@ import {
 } from "../../components/ui/dialog";
 
 const allTenants = [
-  { id: 1, name: "Acme Corp", email: "admin@acme.com", status: "active", revenue: "$28.5K", users: 245, joined: "Jan 15, 2026", plan: "Enterprise", growth: "+12%" },
-  { id: 2, name: "TechFlow", email: "team@techflow.io", status: "active", revenue: "$24.2K", users: 189, joined: "Feb 3, 2026", plan: "SaaS Starter", growth: "+8%" },
-  { id: 3, name: "DataHub", email: "hello@datahub.co", status: "active", revenue: "$18.9K", users: 156, joined: "Mar 8, 2026", plan: "API Usage", growth: "+21%" },
-  { id: 4, name: "CloudSync", email: "info@cloudsync.com", status: "pending", revenue: "$0", users: 0, joined: "Apr 10, 2026", plan: "—", growth: "" },
-  { id: 5, name: "DevTools Inc", email: "team@devtools.io", status: "pending", revenue: "$0", users: 0, joined: "Apr 12, 2026", plan: "—", growth: "" },
-  { id: 6, name: "API Master", email: "contact@apimaster.com", status: "pending", revenue: "$0", users: 0, joined: "Apr 13, 2026", plan: "—", growth: "" },
+  { id: 1, name: "Acme Corp", email: "admin@acme.com", status: "active", revenue: "₹28.5K", users: 245, joined: "Jan 15, 2026", plan: "Enterprise", growth: "+12%" },
+  { id: 2, name: "TechFlow", email: "team@techflow.io", status: "active", revenue: "₹24.2K", users: 189, joined: "Feb 3, 2026", plan: "SaaS Starter", growth: "+8%" },
+  { id: 3, name: "DataHub", email: "hello@datahub.co", status: "active", revenue: "₹18.9K", users: 156, joined: "Mar 8, 2026", plan: "API Usage", growth: "+21%" },
+  { id: 4, name: "CloudSync", email: "info@cloudsync.com", status: "pending", revenue: "₹0", users: 0, joined: "Apr 10, 2026", plan: "—", growth: "" },
+  { id: 5, name: "DevTools Inc", email: "team@devtools.io", status: "pending", revenue: "₹0", users: 0, joined: "Apr 12, 2026", plan: "—", growth: "" },
+  { id: 6, name: "API Master", email: "contact@apimaster.com", status: "pending", revenue: "₹0", users: 0, joined: "Apr 13, 2026", plan: "—", growth: "" },
 ];
 
 export function TenantManagement() {

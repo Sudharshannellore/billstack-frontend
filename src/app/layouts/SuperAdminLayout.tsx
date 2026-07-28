@@ -1,6 +1,5 @@
 import { Outlet } from "react-router";
 import { Sidebar, NavItem } from "../components/Sidebar";
-import { Topbar } from "../components/Topbar";
 import {
   LayoutDashboard,
   Building2,
@@ -28,7 +27,6 @@ export function SuperAdminLayout() {
     <div className="flex h-screen bg-background">
       <Sidebar logo="BillStack" items={navItems} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Topbar />
         <main className="flex-1 overflow-y-auto p-6">
           <Outlet />
         </main>

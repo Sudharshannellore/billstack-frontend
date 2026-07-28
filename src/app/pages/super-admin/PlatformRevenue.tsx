@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { 
-  DollarSign,
+  IndianRupee,
   TrendingUp,
   Building2,
   Percent,
@@ -33,8 +33,8 @@ const revenueRecognitionData = [
 ];
 
 const recognitionStats = [
-  { label: "Recognized Revenue (This Month)", value: "$198K" },
-  { label: "Deferred Revenue", value: "$87K" },
+  { label: "Recognized Revenue (This Month)", value: "₹198K" },
+  { label: "Deferred Revenue", value: "₹87K" },
   { label: "Recognition Rate", value: "69%" },
 ];
 
@@ -47,8 +47,8 @@ const topTenants = [
 ];
 
 const kpis = [
-  { label: "Platform Revenue",    value: "$285K",  trend: "+18.3%", up: true,  icon: DollarSign },
-  { label: "Commission Earned",   value: "$28.5K", trend: "+18.3%", up: true,  icon: Percent },
+  { label: "Platform Revenue",    value: "₹285K",  trend: "+18.3%", up: true,  icon: IndianRupee },
+  { label: "Commission Earned",   value: "₹28.5K", trend: "+18.3%", up: true,  icon: Percent },
   { label: "Active Tenants",      value: "38",     trend: "+4",     up: true,  icon: Building2 },
   { label: "Avg Commission Rate", value: "10%",    trend: "Stable", up: null,  icon: TrendingUp },
 ];
@@ -62,7 +62,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           <div key={entry.dataKey} className="flex items-center gap-2 mb-0.5">
             <span className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
             <span className="text-white font-bold capitalize">{entry.dataKey}:</span>
-            <span className="text-muted-foreground">${entry.value.toLocaleString()}</span>
+            <span className="text-muted-foreground">₹{entry.value.toLocaleString()}</span>
           </div>
         ))}
       </div>
@@ -189,7 +189,7 @@ export function PlatformRevenue() {
                 <div key={t.name}>
                   <div className="flex items-center justify-between mb-1.5 text-xs">
                     <span className="font-semibold text-white">{t.name}</span>
-                    <span className="text-muted-foreground font-mono">${t.revenue.toLocaleString()}</span>
+                    <span className="text-muted-foreground font-mono">₹{t.revenue.toLocaleString()}</span>
                   </div>
                   <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
                     <motion.div
