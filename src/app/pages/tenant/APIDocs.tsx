@@ -1,6 +1,15 @@
 import { motion } from "motion/react";
-import { BookOpen, Copy, Check } from "lucide-react";
+import { BookOpen, Copy, Check, FlaskConical, Radio } from "lucide-react";
 import { useState } from "react";
+import { getCardThemeByIndex } from "../../components/cardThemes";
+import { Button } from "../../components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../../components/ui/select";
 
 const apiSections = [
   {
@@ -315,20 +324,85 @@ const apiSections = [
 export function APIDocs() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState("authentication");
+  const [apiVersion, setApiVersion] = useState<"v1" | "v2">("v1");
+  const [mode, setMode] = useState<"test" | "live">("test");
+
+  const applyMode = (code: string) =>
+    code.replace(/YOUR_API_KEY/g, mode === "live" ? "sk_live_51NxYourLiveKey" : "sk_test_51NxYourTestKey");
 
   const copyToClipboard = (code: string, id: string) => {
-    navigator.clipboard.writeText(code);
+    navigator.clipboard.writeText(applyMode(code));
     setCopiedCode(id);
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold mb-2">API Documentation</h1>
-        <p className="text-muted-foreground">
-          Complete API reference for integrating BillStack into your application
-        </p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-bold mb-2">API Documentation</h1>
+          <p className="text-muted-foreground">
+            Complete API reference for integrating BillStack into your application
+          </p>
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <Select value={apiVersion} onValueChange={(val) => setApiVersion(val as "v1" | "v2")}>
+            <SelectTrigger className="w-[160px] bg-card">
+              <SelectValue placeholder="Version" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="v1">v1</SelectItem>
+              <SelectItem value="v2">v2 (beta)</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="flex items-center rounded-lg border border-border overflow-hidden">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setMode("test")}
+              className={`rounded-none gap-1.5 ${
+                mode === "test" ? "bg-amber-500/10 text-amber-400" : "text-muted-foreground"
+              }`}
+            >
+              <FlaskConical className="w-3.5 h-3.5" />
+              Test Mode
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setMode("live")}
+              className={`rounded-none gap-1.5 ${
+                mode === "live" ? "bg-emerald-500/10 text-emerald-400" : "text-muted-foreground"
+              }`}
+            >
+              <Radio className="w-3.5 h-3.5" />
+              Live Mode
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {apiVersion === "v2" && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-sm text-amber-400"
+        >
+          You are viewing v2 (beta) docs — some endpoints are still test-mode-only and may change
+          before general availability.
+        </motion.div>
+      )}
+
+      <div className="p-3 bg-muted/30 border border-border rounded-lg text-sm text-muted-foreground">
+        Showing code samples in{" "}
+        <span className={mode === "live" ? "text-emerald-400 font-medium" : "text-amber-400 font-medium"}>
+          {mode === "live" ? "Live" : "Test"} Mode
+        </span>{" "}
+        — requests use a <code className="font-mono">{mode === "live" ? "sk_live_..." : "sk_test_..."}</code> key.
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -337,8 +411,10 @@ export function APIDocs() {
           animate={{ opacity: 1, x: 0 }}
           className="lg:col-span-1"
         >
-          <div className="sticky top-6 p-4 bg-card border border-border rounded-xl">
-            <h3 className="text-sm font-semibold mb-4 text-muted-foreground uppercase">
+          <div className={`relative sticky top-6 p-4 bg-card border ${getCardThemeByIndex(0).border} rounded-xl overflow-hidden`}>
+            {/* Top accent bar */}
+            <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(0).topAccent} rounded-t-xl pointer-events-none`} />
+            <h3 className="relative z-10 text-sm font-semibold mb-4 text-muted-foreground uppercase">
               Navigation
             </h3>
             <nav className="space-y-1">
@@ -360,18 +436,25 @@ export function APIDocs() {
         </motion.div>
 
         <div className="lg:col-span-3 space-y-8">
-          {apiSections.map((section, sectionIndex) => (
+          {apiSections.map((section, sectionIndex) => {
+            const theme = getCardThemeByIndex(sectionIndex);
+            return (
             <motion.div
               key={section.id}
               id={section.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: sectionIndex * 0.1 }}
-              className="p-6 bg-card border border-border rounded-xl"
+              className={`relative p-6 bg-card border ${theme.border} rounded-xl overflow-hidden`}
             >
-              <div className="flex items-start gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary-dark/20 rounded-lg flex items-center justify-center">
-                  <BookOpen className="w-5 h-5 text-primary" />
+              {/* Top accent bar */}
+              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${theme.topAccent} rounded-t-xl pointer-events-none`} />
+              {/* Gradient tint */}
+              <div className={`absolute inset-0 bg-gradient-to-br ${theme.bgGlow} pointer-events-none`} />
+
+              <div className="relative z-10 flex items-start gap-3 mb-4">
+                <div className={`w-10 h-10 bg-gradient-to-br ${theme.iconBg} rounded-lg flex items-center justify-center`}>
+                  <BookOpen className={`w-5 h-5 ${theme.iconColor}`} />
                 </div>
                 <div>
                   <h2 className="text-2xl font-semibold mb-2">{section.title}</h2>
@@ -396,7 +479,7 @@ export function APIDocs() {
                     </motion.button>
                   </div>
                   <pre className="p-4 bg-muted/30 rounded-lg overflow-x-auto">
-                    <code className="text-sm font-mono text-foreground">{section.code}</code>
+                    <code className="text-sm font-mono text-foreground">{applyMode(section.code)}</code>
                   </pre>
                 </div>
               )}
@@ -452,7 +535,7 @@ export function APIDocs() {
                           </div>
                           <pre className="p-3 bg-background rounded-lg overflow-x-auto">
                             <code className="text-xs font-mono text-foreground">
-                              {endpoint.code}
+                              {applyMode(endpoint.code)}
                             </code>
                           </pre>
                         </div>
@@ -492,7 +575,8 @@ export function APIDocs() {
                 </div>
               )}
             </motion.div>
-          ))}
+            );
+          })}
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}

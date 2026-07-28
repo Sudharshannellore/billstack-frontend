@@ -1,4 +1,7 @@
 export * from "./AuditLogs";
+export * from "./CreateResource";
+export * from "./CreateTemplate";
+export * from "./CreateTenant";
 export * from "./Dashboard";
 export * from "./GlobalResources";
 export * from "./Monitoring";

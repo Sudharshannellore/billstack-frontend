@@ -15,13 +15,15 @@ import {
   ChevronDown,
   DollarSign
 } from "lucide-react";
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   BarChart,
   Bar,
@@ -30,6 +32,7 @@ import {
   Pie,
   Cell
 } from "recharts";
+import { getCardThemeByIndex } from "../../components/cardThemes";
 
 const timeRanges = ["Last 7 Days", "Last 30 Days", "Last 12 Months", "All Time"];
 
@@ -49,6 +52,19 @@ const planRevenueData = [
   { name: "Credits Wallet", value: 8900, color: "#F59E0B" },
   { name: "Data Bundles", value: 5000, color: "#06B6D4" },
 ];
+
+const cohortRetentionData = [
+  { month: "Month 0", "Jan 2026": 100, "Feb 2026": 100, "Mar 2026": 100 },
+  { month: "Month 1", "Jan 2026": 92, "Feb 2026": 90, "Mar 2026": 94 },
+  { month: "Month 2", "Jan 2026": 87, "Feb 2026": 84, "Mar 2026": 89 },
+  { month: "Month 3", "Jan 2026": 83, "Feb 2026": 79, "Mar 2026": 85 },
+];
+
+const cohortColors: Record<string, string> = {
+  "Jan 2026": "#8B5CF6",
+  "Feb 2026": "#10B981",
+  "Mar 2026": "#06B6D4",
+};
 
 const invoiceLogs = [
   { id: "INV-0098", customer: "Acme Corp", plan: "Enterprise Custom", amount: "₹15,200", status: "paid", date: "Jul 24, 2026" },
@@ -104,12 +120,6 @@ export function RevenueAnalytics() {
             change: "+14.2%",
             isPositive: true,
             icon: IndianRupee,
-            gradient: "from-violet-600/20 via-transparent to-transparent",
-            glow: "bg-violet-500/10",
-            border: "border-violet-500/20",
-            topAccent: "from-violet-500 to-purple-500",
-            iconColor: "text-violet-300",
-            iconBg: "bg-violet-500/20 border border-violet-500/30",
           },
           {
             title: "Net Income",
@@ -117,12 +127,6 @@ export function RevenueAnalytics() {
             change: "+16.8%",
             isPositive: true,
             icon: ArrowUpRight,
-            gradient: "from-emerald-600/20 via-transparent to-transparent",
-            glow: "bg-emerald-500/10",
-            border: "border-emerald-500/20",
-            topAccent: "from-emerald-500 to-teal-500",
-            iconColor: "text-emerald-300",
-            iconBg: "bg-emerald-500/20 border border-emerald-500/30",
           },
           {
             title: "Average LTV",
@@ -130,12 +134,6 @@ export function RevenueAnalytics() {
             change: "-2.4%",
             isPositive: false,
             icon: Layers,
-            gradient: "from-cyan-600/20 via-transparent to-transparent",
-            glow: "bg-cyan-500/10",
-            border: "border-cyan-500/20",
-            topAccent: "from-cyan-500 to-sky-500",
-            iconColor: "text-cyan-300",
-            iconBg: "bg-cyan-500/20 border border-cyan-500/30",
           },
           {
             title: "Revenue Churn",
@@ -143,15 +141,25 @@ export function RevenueAnalytics() {
             change: "-0.4%",
             isPositive: true, // Lower churn is positive
             icon: Percent,
-            gradient: "from-rose-600/20 via-transparent to-transparent",
-            glow: "bg-rose-500/10",
-            border: "border-rose-500/20",
-            topAccent: "from-rose-500 to-pink-500",
-            iconColor: "text-rose-300",
-            iconBg: "bg-rose-500/20 border border-rose-500/30",
+          },
+          {
+            title: "Monthly Churn Rate",
+            value: "2.3%",
+            change: "-0.6%",
+            isPositive: true, // Churn trending down is positive
+            icon: TrendingDown,
+          },
+          {
+            title: "LTV:CAC Ratio",
+            value: "4.2x",
+            change: "Healthy SaaS benchmark is 3x+",
+            isPositive: true,
+            icon: Layers,
+            isCaption: true,
           }
         ].map((card, idx) => {
           const Icon = card.icon;
+          const theme = getCardThemeByIndex(idx);
           return (
             <motion.div
               key={card.title}
@@ -159,36 +167,43 @@ export function RevenueAnalytics() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.05 }}
               whileHover={{ y: -4 }}
-              className={`relative overflow-hidden bg-card border ${card.border} rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between h-[150px]`}
+              className={`relative overflow-hidden ${theme.bgClass} border ${theme.border} rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between h-[150px]`}
             >
               {/* Top accent bar */}
-              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${card.topAccent} rounded-t-2xl pointer-events-none`} />
-              {/* Gradient card tint */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} pointer-events-none`} />
+              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${theme.topAccent} rounded-t-2xl pointer-events-none`} />
               {/* Glow orb */}
-              <div className={`absolute -bottom-4 -right-4 w-20 h-20 ${card.glow} rounded-full blur-2xl pointer-events-none`} />
+              <div className={`absolute -bottom-4 -right-4 w-20 h-20 bg-gradient-to-br ${theme.bgGlow} rounded-full blur-2xl pointer-events-none`} />
 
               <div className="relative z-10 flex items-center justify-between">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{card.title}</span>
-                <div className={`w-8 h-8 rounded-lg ${card.iconBg} flex items-center justify-center`}>
-                  <Icon className={`w-4 h-4 ${card.iconColor}`} />
+                <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${theme.iconBg} flex items-center justify-center`}>
+                  <Icon className={`w-4 h-4 ${theme.iconColor}`} />
                 </div>
               </div>
 
               <div className="relative z-10 flex items-end justify-between mt-4">
                 <div>
                   <h3 className="text-2xl font-black text-white tracking-tight">{card.value}</h3>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    {card.isPositive ? (
-                      <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                    ) : (
-                      <TrendingDown className="w-3.5 h-3.5 text-rose-400" />
-                    )}
-                    <span className={`text-xs font-bold ${card.isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
-                      {card.change}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground font-light">vs last month</span>
-                  </div>
+                  {card.isCaption ? (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[10px] text-muted-foreground font-light">{card.change}</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      {card.title === "Monthly Churn Rate" ? (
+                        // Churn decreasing is the positive direction, so a DOWN arrow is styled green here.
+                        <TrendingDown className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : card.isPositive ? (
+                        <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                      ) : (
+                        <TrendingDown className="w-3.5 h-3.5 text-rose-400" />
+                      )}
+                      <span className={`text-xs font-bold ${card.isPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+                        {card.change}
+                      </span>
+                      <span className="text-[10px] text-muted-foreground font-light">vs last month</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -204,14 +219,14 @@ export function RevenueAnalytics() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="relative lg:col-span-8 bg-card border border-violet-500/20 rounded-2xl p-6 flex flex-col justify-between overflow-hidden"
+          className={`relative lg:col-span-8 bg-card border ${getCardThemeByIndex(0).border} rounded-2xl p-6 flex flex-col justify-between overflow-hidden`}
         >
           {/* Top accent bar */}
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 to-purple-500 rounded-t-2xl pointer-events-none z-10" />
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(0).topAccent} rounded-t-2xl pointer-events-none z-10`} />
           {/* Gradient tint */}
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 via-transparent to-transparent pointer-events-none" />
+          <div className={`absolute inset-0 bg-gradient-to-br ${getCardThemeByIndex(0).bgGlow} pointer-events-none`} />
           {/* Glow orb */}
-          <div className="absolute -top-6 -right-6 w-36 h-36 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className={`absolute -top-6 -right-6 w-36 h-36 ${getCardThemeByIndex(0).orb10} rounded-full blur-3xl pointer-events-none`} />
           
           <div className="relative z-10 w-full h-full flex flex-col justify-between">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -286,14 +301,14 @@ export function RevenueAnalytics() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="relative lg:col-span-4 bg-card border border-cyan-500/20 rounded-2xl p-6 flex flex-col justify-between overflow-hidden"
+          className={`relative lg:col-span-4 bg-card border ${getCardThemeByIndex(1).border} rounded-2xl p-6 flex flex-col justify-between overflow-hidden`}
         >
           {/* Top accent bar */}
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-500 to-sky-500 rounded-t-2xl pointer-events-none z-10" />
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(1).topAccent} rounded-t-2xl pointer-events-none z-10`} />
           {/* Gradient tint */}
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/10 via-transparent to-transparent pointer-events-none" />
+          <div className={`absolute inset-0 bg-gradient-to-br ${getCardThemeByIndex(1).bgGlow} pointer-events-none`} />
           {/* Glow orb */}
-          <div className="absolute -bottom-8 -right-8 w-36 h-36 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+          <div className={`absolute -bottom-8 -right-8 w-36 h-36 ${getCardThemeByIndex(1).orb5} rounded-full blur-3xl pointer-events-none`} />
           
           <div className="relative z-10 w-full h-full flex flex-col justify-between">
           <div>
@@ -350,15 +365,15 @@ export function RevenueAnalytics() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="relative bg-card border border-emerald-500/20 rounded-2xl p-6 overflow-hidden"
+        className={`relative bg-card border ${getCardThemeByIndex(2).border} rounded-2xl p-6 overflow-hidden`}
       >
         {/* Top accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-500 rounded-t-2xl pointer-events-none z-10" />
+        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(2).topAccent} rounded-t-2xl pointer-events-none z-10`} />
         {/* Gradient tint */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/8 via-transparent to-transparent pointer-events-none" />
+        <div className={`absolute inset-0 bg-gradient-to-br ${getCardThemeByIndex(2).bgGlow} pointer-events-none`} />
         {/* Glow orb */}
-        <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
-        
+        <div className={`absolute -bottom-10 -right-10 w-48 h-48 ${getCardThemeByIndex(2).orb5} rounded-full blur-3xl pointer-events-none`} />
+
         <div className="relative z-10">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -414,6 +429,57 @@ export function RevenueAnalytics() {
             </tbody>
           </table>
         </div>
+        </div>
+      </motion.div>
+
+      {/* Customer Cohort Retention */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        className={`relative bg-card border ${getCardThemeByIndex(3).border} rounded-2xl p-6 overflow-hidden`}
+      >
+        {/* Top accent bar */}
+        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(3).topAccent} rounded-t-2xl pointer-events-none z-10`} />
+        {/* Gradient tint */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${getCardThemeByIndex(3).bgGlow} pointer-events-none`} />
+        {/* Glow orb */}
+        <div className={`absolute -top-6 -right-6 w-40 h-40 ${getCardThemeByIndex(3).orb10} rounded-full blur-3xl pointer-events-none`} />
+
+        <div className="relative z-10">
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-white">Customer Cohort Retention</h3>
+            <p className="text-xs text-muted-foreground font-light mt-0.5">Retention percentage by months since signup, tracked across recent signup cohorts.</p>
+          </div>
+
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={cohortRetentionData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+              <XAxis dataKey="month" stroke="#71717A" fontSize={11} tickLine={false} />
+              <YAxis stroke="#71717A" fontSize={11} tickLine={false} domain={[60, 100]} unit="%" />
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: "#0B0B0F",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: "12px",
+                  fontSize: 12
+                }}
+              />
+              <Legend verticalAlign="top" height={36} iconType="circle" wrapperStyle={{ fontSize: 11 }} />
+              {Object.keys(cohortColors).map((cohort) => (
+                <Line
+                  key={cohort}
+                  type="monotone"
+                  dataKey={cohort}
+                  name={cohort}
+                  stroke={cohortColors[cohort]}
+                  strokeWidth={2.5}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              ))}
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </motion.div>
 

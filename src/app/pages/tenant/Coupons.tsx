@@ -1,42 +1,31 @@
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Ticket, MoreVertical, Edit, Trash2, Calendar as CalendarIcon, Package, Sparkles, Check, ArrowRight, ArrowLeft } from "lucide-react";
+import { Plus, Ticket, MoreVertical, Edit, Trash2, Copy, Power, PowerOff } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { format } from "date-fns";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "../../components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "../../components/ui/form";
-import { Input } from "../../components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
-import { Button } from "../../components/ui/button";
-import { Calendar } from "../../components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "../../components/ui/popover";
-import { cn } from "../../components/ui/utils";
-import { MOCK_PRODUCTS } from "../../data/mock-plans";
+import { getCardThemeByIndex } from "../../components/cardThemes";
+
+// Fixed "today" reference date for mock day-count calculations (no real backend/date lib needed)
+const TODAY = new Date("2026-07-28");
+
+function parseUsage(usage: string): { used: number; total: number; pct: number } {
+  const [usedStr, totalStr] = usage.split("/");
+  const used = parseInt(usedStr, 10) || 0;
+  const total = parseInt(totalStr, 10) || 0;
+  const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
+  return { used, total, pct };
+}
+
+function getExpiryInfo(expiry: string): { daysRemaining: number; isExpired: boolean; isSoon: boolean } {
+  const expiryDate = new Date(expiry);
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const daysRemaining = Math.round((expiryDate.getTime() - TODAY.getTime()) / msPerDay);
+  return {
+    daysRemaining,
+    isExpired: daysRemaining < 0,
+    isSoon: daysRemaining >= 0 && daysRemaining <= 30,
+  };
+}
 
 const initialCoupons = [
   {
@@ -71,74 +60,36 @@ const initialCoupons = [
   },
 ];
 
-type CouponFormValues = {
-  name: string;
-  code: string;
-  type: string;
-  value: string;
-  expiry: Date;
-  productId: string;
-  planId: string;
-};
-
-const COUPON_STEPS = ["Target", "Identity", "Offer"];
-
 export function Coupons() {
+  const theme = getCardThemeByIndex(3);
+  const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState<number | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [couponsList, setCouponsList] = useState(initialCoupons);
-  const [currentStep, setCurrentStep] = useState(0);
 
-  const form = useForm<CouponFormValues>({
-    defaultValues: {
-      name: "",
-      code: "",
-      type: "percentage",
-      value: "",
-      expiry: new Date(),
-      productId: "",
-      planId: "",
-    },
-  });
-
-  const selectedProductId = form.watch("productId");
-  const selectedPlanId = form.watch("planId");
-
-  const selectedProduct = MOCK_PRODUCTS.find((p) => p.id === selectedProductId);
-  const selectedPlan = selectedProduct?.plans.find((p) => p.id === selectedPlanId);
-
-  const onSubmit = (values: CouponFormValues) => {
+  const handleDuplicate = (coupon: (typeof initialCoupons)[number]) => {
     const newCoupon = {
-      id: couponsList.length + 1,
-      name: values.name,
-      code: values.code.toUpperCase(),
-      type: values.type,
-      value: values.type === "percentage" ? `${values.value}%` : `₹${values.value}`,
-      usage: "0/∞",
-      expiry: format(values.expiry, "MMM d, yyyy"),
-      status: "active",
+      ...coupon,
+      id: Math.max(...couponsList.map((c) => c.id)) + 1,
+      name: `${coupon.name} (Copy)`,
+      code: `${coupon.code}-COPY`,
+      usage: `0/${coupon.usage.split("/")[1]}`,
+      status: "draft",
     };
-
-    setCouponsList([newCoupon, ...couponsList]);
-    setIsDialogOpen(false);
-    form.reset();
-    toast.success("Coupon created successfully", {
-      description: `Coupon ${newCoupon.code} is now active.`,
-    });
-    setCurrentStep(0);
+    setCouponsList((prev) => [...prev, newCoupon]);
+    toast.success(`Duplicated "${coupon.name}" as ${newCoupon.code}`);
+    setShowMenu(null);
   };
 
-  const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, COUPON_STEPS.length - 1));
-  const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 0));
-
-  const isStepValid = () => {
-    const values = form.getValues();
-    switch (currentStep) {
-      case 0: return !!values.productId && !!values.planId;
-      case 1: return !!values.name && !!values.code && !!values.expiry;
-      case 2: return !!values.type && !!values.value;
-      default: return false;
-    }
+  const handleToggleStatus = (coupon: (typeof initialCoupons)[number]) => {
+    const nextStatus = coupon.status === "active" ? "paused" : "active";
+    setCouponsList((prev) =>
+      prev.map((c) => (c.id === coupon.id ? { ...c, status: nextStatus } : c))
+    );
+    toast.success(
+      nextStatus === "active"
+        ? `"${coupon.name}" is now active`
+        : `"${coupon.name}" has been paused`
+    );
   };
 
   return (
@@ -151,7 +102,7 @@ export function Coupons() {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => setIsDialogOpen(true)}
+          onClick={() => navigate("/tenant/coupons/create")}
           className="px-6 py-3 bg-gradient-to-r from-primary to-primary-dark rounded-lg text-white font-medium shadow-lg shadow-primary/30 flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
@@ -159,317 +110,17 @@ export function Coupons() {
         </motion.button>
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={(open) => {
-        setIsDialogOpen(open);
-        if (!open) setCurrentStep(0);
-      }}>
-        <DialogContent className="sm:max-w-[550px] w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto bg-card border-border shadow-2xl p-0 rounded-[1.5rem] sm:rounded-[2rem] focus:outline-none">
-          <div className="p-4 sm:p-6 border-b border-border bg-muted/20">
-            <DialogHeader>
-              <DialogTitle className="text-2xl font-bold italic">Create New Coupon</DialogTitle>
-              <DialogDescription className="italic">
-                Complete the {COUPON_STEPS.length} steps to launch your campaign.
-              </DialogDescription>
-            </DialogHeader>
-
-            {/* Stepper Progress */}
-            <div className="flex items-center justify-between mt-6 px-2">
-              {COUPON_STEPS.map((step, index) => (
-                <div key={step} className="flex items-center flex-1 last:flex-none">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className={cn(
-                      "w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all duration-300",
-                      index <= currentStep ? "bg-primary text-white" : "bg-muted text-muted-foreground border border-border"
-                    )}>
-                      {index < currentStep ? <Check className="w-4 h-4" /> : index + 1}
-                    </div>
-                    <span className={cn(
-                      "text-[10px] uppercase font-bold tracking-wider hidden sm:block",
-                      index <= currentStep ? "text-primary" : "text-muted-foreground"
-                    )}>{step}</span>
-                  </div>
-                  {index < COUPON_STEPS.length - 1 && (
-                    <div className="flex-1 h-[2px] mx-4 self-center mb-6 bg-muted">
-                      <motion.div 
-                        initial={false}
-                        animate={{ width: index < currentStep ? "100%" : "0%" }}
-                        className="h-full bg-primary"
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="p-4 sm:p-6">
-              <div className="min-h-[280px]">
-                <AnimatePresence mode="wait">
-                  {currentStep === 0 && (
-                    <motion.div
-                      key="step0"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="space-y-6"
-                    >
-                      <div className="space-y-4 p-4 bg-muted/30 rounded-xl border border-border">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Package className="w-4 h-4 text-primary" />
-                          <span className="text-xs font-bold uppercase italic">Plan Association</span>
-                        </div>
-                        
-                        <div className="grid grid-cols-1 gap-4">
-                          <FormField
-                            control={form.control}
-                            name="productId"
-                            rules={{ required: "Product is required" }}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-[10px] font-bold uppercase opacity-70">Product</FormLabel>
-                                <Select onValueChange={(val) => {
-                                  field.onChange(val);
-                                  form.setValue("planId", "");
-                                }} defaultValue={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger className="h-12 text-sm bg-card">
-                                      <SelectValue placeholder="Select product" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {MOCK_PRODUCTS.map((p) => (
-                                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-
-                          <FormField
-                            control={form.control}
-                            name="planId"
-                            rules={{ required: "Plan is required" }}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel className="text-[10px] font-bold uppercase opacity-70">Target Plan</FormLabel>
-                                <Select 
-                                  onValueChange={field.onChange} 
-                                  value={field.value}
-                                  disabled={!selectedProductId}
-                                >
-                                  <FormControl>
-                                    <SelectTrigger className="h-12 text-sm bg-card">
-                                      <SelectValue placeholder="Select plan" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    {selectedProduct?.plans.map((p) => (
-                                      <SelectItem key={p.id} value={p.id}>{p.name} ({p.price})</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-
-                        {selectedPlan && (
-                          <motion.div 
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="flex items-center gap-2 mt-4 px-3 py-2 bg-primary/5 rounded-lg border border-primary/20"
-                          >
-                            <Sparkles className="w-4 h-4 text-primary" />
-                            <div className="flex flex-col">
-                              <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Plan Detected</span>
-                              <span className="text-xs italic text-muted-foreground">{selectedPlan.billingStyle} based billing</span>
-                            </div>
-                          </motion.div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {currentStep === 1 && (
-                    <motion.div
-                      key="step1"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="space-y-6"
-                    >
-                      <div className="grid grid-cols-1 gap-6">
-                        <FormField
-                          control={form.control}
-                          name="name"
-                          rules={{ required: "Name is required" }}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="font-bold italic">Campaign Name</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Winter Sale 2026" {...field} className="h-12 bg-card" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="code"
-                          rules={{ required: "Code is required" }}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="font-bold italic">Coupon Code</FormLabel>
-                              <FormControl>
-                                <Input placeholder="WINTER50" {...field} className="h-12 uppercase bg-card font-mono" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="expiry"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-col">
-                              <FormLabel className="font-bold italic">Expiry Date</FormLabel>
-                              <Popover>
-                                <PopoverTrigger asChild>
-                                  <FormControl>
-                                    <Button
-                                      variant={"outline"}
-                                      className={cn(
-                                        "w-full h-12 pl-3 text-left font-normal bg-card",
-                                        !field.value && "text-muted-foreground"
-                                      )}
-                                    >
-                                      {field.value ? format(field.value, "PPP") : <span>Pick a date</span>}
-                                      <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                    </Button>
-                                  </FormControl>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                  <Calendar
-                                    mode="single"
-                                    selected={field.value}
-                                    onSelect={field.onChange}
-                                    disabled={(date) => date < new Date()}
-                                    initialFocus
-                                  />
-                                </PopoverContent>
-                              </Popover>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {currentStep === 2 && (
-                    <motion.div
-                      key="step2"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="space-y-6"
-                    >
-                      <div className="p-6 bg-primary/5 rounded-2xl border-2 border-dashed border-primary/20 text-center mb-6">
-                         <div className="text-sm font-bold italic text-primary mb-1">Targeting {selectedPlan?.name}</div>
-                         <div className="text-[10px] uppercase text-muted-foreground">{selectedProduct?.name}</div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="type"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="font-bold italic">Discount Type</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                <FormControl>
-                                  <SelectTrigger className="h-12 bg-card">
-                                    <SelectValue placeholder="Select type" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="percentage">Percentage (%)</SelectItem>
-                                   <SelectItem value="fixed">Fixed Amount (₹)</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="value"
-                          rules={{ required: "Value is required" }}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel className="font-bold italic">Value</FormLabel>
-                              <FormControl>
-                                <Input type="number" placeholder="e.g. 20" {...field} className="h-12 bg-card" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              <DialogFooter className="pt-6 border-t border-border mt-6 flex flex-col sm:flex-row gap-3 sm:justify-between w-full">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={currentStep === 0 ? () => setIsDialogOpen(false) : prevStep}
-                  className="h-12 px-6 font-bold italic flex items-center gap-2"
-                >
-                  {currentStep === 0 ? "Cancel" : <><ArrowLeft className="w-4 h-4" /> Back</>}
-                </Button>
-                
-                {currentStep < COUPON_STEPS.length - 1 ? (
-                  <Button
-                    type="button"
-                    onClick={nextStep}
-                    disabled={!isStepValid()}
-                    className="h-12 px-8 bg-primary hover:bg-primary-dark text-white font-bold italic shadow-lg shadow-primary/20 flex items-center gap-2"
-                  >
-                    Continue <ArrowRight className="w-4 h-4" />
-                  </Button>
-                ) : (
-                  <Button
-                    type="submit"
-                    disabled={!isStepValid()}
-                    className="h-12 px-8 bg-primary hover:bg-primary-dark text-white font-bold italic shadow-lg shadow-primary/20"
-                  >
-                    Activate Coupon
-                  </Button>
-                )}
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
-
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative bg-card border border-violet-500/20 rounded-2xl overflow-hidden"
+        className={`relative bg-card border ${theme.border} rounded-2xl overflow-hidden`}
       >
         {/* Top accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 rounded-t-2xl pointer-events-none z-10" />
+        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${theme.topAccent} rounded-t-2xl pointer-events-none z-10`} />
         {/* Gradient tint */}
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-600/8 via-transparent to-indigo-600/5 pointer-events-none" />
+        <div className={`absolute inset-0 bg-gradient-to-br ${theme.bgGlow} pointer-events-none`} />
         {/* Glow orb */}
-        <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className={`absolute -bottom-10 -right-10 w-48 h-48 bg-gradient-to-br ${theme.bgGlow} rounded-full blur-3xl pointer-events-none`} />
 
         <div className="relative z-10 overflow-x-auto">
           <table className="w-full">
@@ -521,44 +172,117 @@ export function Coupons() {
                   </span>
                 </td>
                 <td className="py-4 px-6 font-bold text-primary">{coupon.value}</td>
-                <td className="py-4 px-6 text-muted-foreground text-sm">{coupon.usage}</td>
-                <td className="py-4 px-6 text-muted-foreground text-sm">{coupon.expiry}</td>
                 <td className="py-4 px-6">
-                  <span className={`px-2 py-1 text-xs rounded capitalize ${
-                    coupon.status === 'active' ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'
-                  }`}>
-                    {coupon.status}
-                  </span>
+                  {(() => {
+                    const { used, total, pct } = parseUsage(coupon.usage);
+                    return (
+                      <div className="min-w-[110px]">
+                        <div className="text-sm text-muted-foreground mb-1">
+                          {used}/{total}{" "}
+                          <span className="text-xs">({pct.toFixed(1)}%)</span>
+                        </div>
+                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                          <div
+                            className={`h-full bg-gradient-to-r ${theme.topAccent} rounded-full`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </td>
-                <td className="py-4 px-6 text-right">
-                  <div className="relative inline-block">
+                <td className="py-4 px-6">
+                  {(() => {
+                    const { daysRemaining, isExpired, isSoon } = getExpiryInfo(coupon.expiry);
+                    return (
+                      <div>
+                        <div className="text-sm text-muted-foreground">{coupon.expiry}</div>
+                        {isExpired ? (
+                          <span className="inline-block mt-1 px-2 py-0.5 text-xs rounded bg-rose-500/10 text-rose-500">
+                            Expired
+                          </span>
+                        ) : (
+                          <span
+                            className={`inline-block mt-1 px-2 py-0.5 text-xs rounded ${
+                              isSoon ? "bg-amber-500/10 text-amber-500" : "text-muted-foreground"
+                            }`}
+                          >
+                            {daysRemaining} day{daysRemaining === 1 ? "" : "s"} left
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </td>
+                <td className="py-4 px-6">
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-1 text-xs rounded capitalize ${
+                      coupon.status === 'active' ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {coupon.status}
+                    </span>
                     <motion.button
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.9 }}
-                      onClick={() => setShowMenu(showMenu === coupon.id ? null : coupon.id)}
+                      onClick={() => handleToggleStatus(coupon)}
+                      title={coupon.status === "active" ? "Deactivate" : "Activate"}
+                      className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+                    >
+                      {coupon.status === "active" ? (
+                        <PowerOff className="w-3.5 h-3.5 text-muted-foreground" />
+                      ) : (
+                        <Power className="w-3.5 h-3.5 text-success" />
+                      )}
+                    </motion.button>
+                  </div>
+                </td>
+                <td className="py-4 px-6 text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      onClick={() => handleDuplicate(coupon)}
+                      title="Duplicate"
                       className="p-2 hover:bg-muted rounded-lg transition-colors"
                     >
-                      <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                      <Copy className="w-4 h-4 text-muted-foreground" />
                     </motion.button>
-                    <AnimatePresence>
-                      {showMenu === coupon.id && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                          className="absolute right-0 mt-2 w-40 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden text-left"
-                        >
-                          <button className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2">
-                            <Edit className="w-4 h-4" />
-                            <span>Edit</span>
-                          </button>
-                          <button className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2 text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                            <span>Delete</span>
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                    <div className="relative inline-block">
+                      <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={() => setShowMenu(showMenu === coupon.id ? null : coupon.id)}
+                        className="p-2 hover:bg-muted rounded-lg transition-colors"
+                      >
+                        <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                      </motion.button>
+                      <AnimatePresence>
+                        {showMenu === coupon.id && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            className="absolute right-0 mt-2 w-40 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden text-left"
+                          >
+                            <button className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2">
+                              <Edit className="w-4 h-4" />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setCouponsList((prev) => prev.filter((c) => c.id !== coupon.id));
+                                toast.success(`Deleted "${coupon.name}"`);
+                                setShowMenu(null);
+                              }}
+                              className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2 text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                              <span>Delete</span>
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                 </td>
               </motion.tr>

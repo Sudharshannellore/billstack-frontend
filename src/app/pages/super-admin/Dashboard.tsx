@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { StatCard } from "../../components/StatCard";
+import { getCardThemeByIndex } from "../../components/cardThemes";
 import { 
   Building2, 
   DollarSign, 
@@ -52,6 +53,9 @@ const activities = [
 ];
 
 export function SuperAdminDashboard() {
+  const revenueTheme = getCardThemeByIndex(0);
+  const tenantVolumeTheme = getCardThemeByIndex(1);
+  const activityTheme = getCardThemeByIndex(2);
   const getActivityIcon = (type: string) => {
     switch (type) {
       case "register": return <Users className="w-4 h-4 text-primary" />;
@@ -116,6 +120,7 @@ export function SuperAdminDashboard() {
           changeType="positive"
           icon={Building2}
           delay={0}
+          colorIndex={0}
         />
         <StatCard
           title="Platform Revenue"
@@ -124,6 +129,7 @@ export function SuperAdminDashboard() {
           changeType="positive"
           icon={DollarSign}
           delay={0.1}
+          colorIndex={1}
         />
         <StatCard
           title="Total Users"
@@ -132,6 +138,7 @@ export function SuperAdminDashboard() {
           changeType="positive"
           icon={Users}
           delay={0.2}
+          colorIndex={2}
         />
         <StatCard
           title="Growth Velocity"
@@ -139,6 +146,7 @@ export function SuperAdminDashboard() {
           change="+5%"
           changeType="positive"
           icon={TrendingUp}
+          colorIndex={3}
           delay={0.3}
         />
       </div>
@@ -151,14 +159,14 @@ export function SuperAdminDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="relative p-6 bg-card border border-violet-500/20 rounded-2xl flex flex-col justify-between overflow-hidden"
+          className={`relative p-6 bg-card border ${revenueTheme.border} rounded-2xl flex flex-col justify-between overflow-hidden`}
         >
           {/* Top accent bar */}
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 to-purple-500 rounded-t-2xl pointer-events-none" />
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${revenueTheme.topAccent} rounded-t-2xl pointer-events-none`} />
           {/* Gradient tint */}
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 via-transparent to-transparent pointer-events-none" />
+          <div className={`absolute inset-0 bg-gradient-to-br ${revenueTheme.bgGlow} pointer-events-none`} />
           {/* Glow orb */}
-          <div className="absolute -top-6 -right-6 w-32 h-32 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className={`absolute -top-6 -right-6 w-32 h-32 bg-gradient-to-br ${revenueTheme.bgGlow} rounded-full blur-3xl pointer-events-none`} />
           <div className="mb-6">
             <h3 className="text-lg font-bold text-white">Aggregated Platform MRR</h3>
             <p className="text-xs text-muted-foreground font-light mt-0.5">Aggregated billing payouts across all isolated client databases.</p>
@@ -202,14 +210,14 @@ export function SuperAdminDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="relative p-6 bg-card border border-indigo-500/20 rounded-2xl flex flex-col justify-between overflow-hidden"
+          className={`relative p-6 bg-card border ${tenantVolumeTheme.border} rounded-2xl flex flex-col justify-between overflow-hidden`}
         >
           {/* Top accent bar */}
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-indigo-500 to-violet-500 rounded-t-2xl pointer-events-none" />
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${tenantVolumeTheme.topAccent} rounded-t-2xl pointer-events-none`} />
           {/* Gradient tint */}
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-transparent to-transparent pointer-events-none" />
+          <div className={`absolute inset-0 bg-gradient-to-br ${tenantVolumeTheme.bgGlow} pointer-events-none`} />
           {/* Glow orb */}
-          <div className="absolute -top-6 -right-6 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className={`absolute -top-6 -right-6 w-32 h-32 bg-gradient-to-br ${tenantVolumeTheme.bgGlow} rounded-full blur-3xl pointer-events-none`} />
           <div className="mb-6">
             <h3 className="text-lg font-bold text-white">Top Tenant Volume</h3>
             <p className="text-xs text-muted-foreground font-light mt-0.5">Top-earning companies utilizing the active API gateway.</p>
@@ -241,14 +249,14 @@ export function SuperAdminDashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
-        className="relative p-6 bg-card border border-purple-500/20 rounded-2xl overflow-hidden"
+        className={`relative p-6 bg-card border ${activityTheme.border} rounded-2xl overflow-hidden`}
       >
         {/* Top accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-purple-500 via-violet-500 to-indigo-500 rounded-t-2xl pointer-events-none" />
+        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${activityTheme.topAccent} rounded-t-2xl pointer-events-none`} />
         {/* Gradient tint */}
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/8 via-transparent to-indigo-600/5 pointer-events-none" />
+        <div className={`absolute inset-0 bg-gradient-to-br ${activityTheme.bgGlow} pointer-events-none`} />
         {/* Glow orb */}
-        <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className={`absolute -bottom-8 -right-8 w-48 h-48 bg-gradient-to-br ${activityTheme.bgGlow} rounded-full blur-3xl pointer-events-none`} />
         <div className="flex items-center justify-between mb-6">
           <div>
             <h3 className="text-lg font-bold text-white flex items-center gap-2">

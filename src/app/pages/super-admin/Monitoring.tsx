@@ -14,12 +14,13 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { getCardThemeByIndex } from "../../components/cardThemes";
 
 const metrics = [
-  { name: "API Response Time", value: "124ms",  raw: 124,   target: 200, unit: "ms",    status: "healthy", icon: Zap,           topAccent: "from-violet-500 to-purple-500",  border: "border-violet-500/20",  bgGrad: "from-violet-600/15 via-transparent to-transparent",  glow: "bg-violet-500/10",   iconBg: "bg-violet-500/10 border-violet-500/20",   iconColor: "text-violet-400" },
-  { name: "DB Connections",    value: "45/100", raw: 45,    target: 100, unit: "conns", status: "healthy", icon: Database,       topAccent: "from-cyan-500 to-sky-500",       border: "border-cyan-500/20",    bgGrad: "from-cyan-600/15 via-transparent to-transparent",    glow: "bg-cyan-500/10",     iconBg: "bg-cyan-500/10 border-cyan-500/20",       iconColor: "text-cyan-400" },
-  { name: "Error Rate",        value: "0.02%",  raw: 0.02,  target: 1,   unit: "%",     status: "healthy", icon: AlertTriangle,  topAccent: "from-rose-500 to-pink-500",      border: "border-rose-500/20",    bgGrad: "from-rose-600/15 via-transparent to-transparent",    glow: "bg-rose-500/10",     iconBg: "bg-rose-500/10 border-rose-500/20",       iconColor: "text-rose-400" },
-  { name: "Uptime",            value: "99.98%", raw: 99.98, target: 100, unit: "%",     status: "healthy", icon: Server,         topAccent: "from-emerald-500 to-teal-500",   border: "border-emerald-500/20", bgGrad: "from-emerald-600/15 via-transparent to-transparent", glow: "bg-emerald-500/10",  iconBg: "bg-emerald-500/10 border-emerald-500/20", iconColor: "text-emerald-400" },
+  { name: "API Response Time", value: "124ms",  raw: 124,   target: 200, unit: "ms",    status: "healthy", icon: Zap },
+  { name: "DB Connections",    value: "45/100", raw: 45,    target: 100, unit: "conns", status: "healthy", icon: Database },
+  { name: "Error Rate",        value: "0.02%",  raw: 0.02,  target: 1,   unit: "%",     status: "healthy", icon: AlertTriangle },
+  { name: "Uptime",            value: "99.98%", raw: 99.98, target: 100, unit: "%",     status: "healthy", icon: Server },
 ];
 
 const services = [
@@ -105,23 +106,24 @@ export function Monitoring() {
         {metrics.map((metric, i) => {
           const Icon = metric.icon;
           const pct = Math.min((metric.raw / metric.target) * 100, 100);
+          const theme = getCardThemeByIndex(i);
           return (
             <motion.div
               key={metric.name}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.07 }}
-              className={`relative p-5 bg-card border ${metric.border} rounded-2xl overflow-hidden group transition-all duration-300`}
+              className={`relative p-5 bg-card border ${theme.border} rounded-2xl overflow-hidden group transition-all duration-300`}
             >
               {/* Top accent bar */}
-              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${metric.topAccent} rounded-t-2xl pointer-events-none`} />
+              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${theme.topAccent} rounded-t-2xl pointer-events-none`} />
               {/* Gradient tint */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${metric.bgGrad} pointer-events-none`} />
+              <div className={`absolute inset-0 bg-gradient-to-br ${theme.bgGlow} pointer-events-none`} />
               {/* Glow orb */}
-              <div className={`absolute -bottom-4 -right-4 w-24 h-24 ${metric.glow} rounded-full blur-xl pointer-events-none`} />
+              <div className={`absolute -bottom-4 -right-4 w-24 h-24 ${theme.orb10} rounded-full blur-xl pointer-events-none`} />
               <div className="relative z-10 flex items-center justify-between mb-4">
-                <div className={`w-9 h-9 rounded-xl ${metric.iconBg} flex items-center justify-center`}>
-                  <Icon className={`w-4 h-4 ${metric.iconColor}`} />
+                <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${theme.iconBg} flex items-center justify-center`}>
+                  <Icon className={`w-4 h-4 ${theme.iconColor}`} />
                 </div>
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               </div>
@@ -133,7 +135,7 @@ export function Monitoring() {
                   initial={{ width: 0 }}
                   animate={{ width: `${Math.min((metric.raw / metric.target) * 100, 100)}%` }}
                   transition={{ delay: i * 0.07 + 0.3, duration: 1, ease: "easeOut" }}
-                  className={`h-full ${metric.iconColor.replace('text-', 'bg-')} rounded-full`}
+                  className={`h-full bg-gradient-to-r ${theme.topAccent} rounded-full`}
                 />
               </div>
             </motion.div>
@@ -148,14 +150,14 @@ export function Monitoring() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
-          className="relative lg:col-span-2 p-6 bg-card border border-violet-500/20 rounded-2xl overflow-hidden"
+          className={`relative lg:col-span-2 p-6 bg-card border ${getCardThemeByIndex(2).border} rounded-2xl overflow-hidden`}
         >
           {/* Top accent bar */}
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-500 to-rose-500 rounded-t-2xl pointer-events-none" />
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(2).topAccent} rounded-t-2xl pointer-events-none`} />
           {/* Gradient tint */}
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 via-transparent to-rose-600/5 pointer-events-none" />
+          <div className={`absolute inset-0 bg-gradient-to-br ${getCardThemeByIndex(2).bgGlow} pointer-events-none`} />
           {/* Glow orb */}
-          <div className="absolute -top-6 -right-6 w-36 h-36 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className={`absolute -top-6 -right-6 w-36 h-36 ${getCardThemeByIndex(2).orb10} rounded-full blur-3xl pointer-events-none`} />
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-sm font-bold text-white">Response Time & Errors</h3>
@@ -193,14 +195,14 @@ export function Monitoring() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="relative p-6 bg-card border border-emerald-500/20 rounded-2xl overflow-hidden"
+          className={`relative p-6 bg-card border ${getCardThemeByIndex(3).border} rounded-2xl overflow-hidden`}
         >
           {/* Top accent bar */}
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-500 rounded-t-2xl pointer-events-none" />
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(3).topAccent} rounded-t-2xl pointer-events-none`} />
           {/* Gradient tint */}
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/10 via-transparent to-transparent pointer-events-none" />
+          <div className={`absolute inset-0 bg-gradient-to-br ${getCardThemeByIndex(3).bgGlow} pointer-events-none`} />
           {/* Glow orb */}
-          <div className="absolute -bottom-8 -right-8 w-36 h-36 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+          <div className={`absolute -bottom-8 -right-8 w-36 h-36 ${getCardThemeByIndex(3).orb5} rounded-full blur-3xl pointer-events-none`} />
           <h3 className="text-sm font-bold text-white mb-5">Service Status</h3>
           <div className="space-y-3">
             {services.map((svc, i) => {

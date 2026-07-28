@@ -1,5 +1,6 @@
-import { Search, Bell, User } from "lucide-react";
+import { Search, User } from "lucide-react";
 import { motion } from "motion/react";
+import { NotificationCenter } from "./NotificationCenter";
 
 interface TopbarProps {
   title?: string;
@@ -26,14 +27,7 @@ export function Topbar({ title }: TopbarProps) {
           />
         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="relative w-10 h-10 flex items-center justify-center bg-input-background border border-border rounded-lg text-muted-foreground hover:text-foreground hover:border-primary transition-all"
-        >
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full" />
-        </motion.button>
+        <NotificationCenter />
 
         <motion.button
           whileHover={{ scale: 1.05 }}

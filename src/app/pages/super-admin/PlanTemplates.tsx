@@ -1,47 +1,20 @@
-import { motion, AnimatePresence } from "motion/react";
-import { 
-  FileText, 
-  Plus, 
-  Users, 
-  Zap, 
-  Layers, 
-  MoreVertical, 
-  Copy, 
+import { motion } from "motion/react";
+import {
+  Plus,
+  Users,
+  Zap,
+  Layers,
+  MoreVertical,
+  Copy,
   Star,
   CheckCircle,
   Edit,
   Trash2,
-  HelpCircle
 } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "../../components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "../../components/ui/form";
-import { Input } from "../../components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
-import { Button } from "../../components/ui/button";
-import { Checkbox } from "../../components/ui/checkbox";
+import { getCardTheme, getCardThemeByIndex } from "../../components/cardThemes";
 
 const templates = [
   { 
@@ -54,8 +27,6 @@ const templates = [
     description: "Fixed monthly subscription ideal for early-stage SaaS products.",
     features: ["Unlimited API Calls", "5GB Storage", "Email Support"],
     icon: Star,
-    gradient: "from-primary via-violet-600 to-purple-700",
-    glow: "shadow-primary/20",
   },
   { 
     id: 2, 
@@ -67,8 +38,6 @@ const templates = [
     description: "Pay-per-use model for API-driven products. Scale costs with consumption.",
     features: ["Per-request billing", "Daily invoices", "Overage alerts"],
     icon: Zap,
-    gradient: "from-amber-500 via-orange-500 to-red-500",
-    glow: "shadow-amber-500/20",
   },
   { 
     id: 3, 
@@ -80,8 +49,6 @@ const templates = [
     description: "Generous free tier with usage-based overages after quota is exceeded.",
     features: ["10K free calls/mo", "Usage metering", "Auto-upgrade prompts"],
     icon: Layers,
-    gradient: "from-cyan-500 via-sky-500 to-blue-600",
-    glow: "shadow-cyan-500/20",
   },
   { 
     id: 4, 
@@ -93,89 +60,13 @@ const templates = [
     description: "Fully negotiated contracts with SLA guarantees and dedicated support.",
     features: ["Custom limits", "99.99% SLA", "Dedicated CSM"],
     icon: Users,
-    gradient: "from-emerald-500 via-teal-500 to-green-600",
-    glow: "shadow-emerald-500/20",
   },
 ];
 
-const typeColors: Record<string, string> = {
-  Subscription: "bg-primary/10 text-primary border-primary/20",
-  "Usage-based": "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  Hybrid: "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
-  Custom: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-};
-
-type TemplateFormValues = {
-  name: string;
-  type: "Subscription" | "Usage-based" | "Hybrid" | "Custom";
-  price: string;
-  description: string;
-  features: string;
-  featured: boolean;
-};
-
-const iconMap = {
-  Subscription: Star,
-  "Usage-based": Zap,
-  Hybrid: Layers,
-  Custom: Users,
-};
-
-const gradientMap = {
-  Subscription: "from-primary via-violet-600 to-purple-700",
-  "Usage-based": "from-amber-500 via-orange-500 to-red-500",
-  Hybrid: "from-cyan-500 via-sky-500 to-blue-600",
-  Custom: "from-emerald-500 via-teal-500 to-green-600",
-};
-
-const glowMap = {
-  Subscription: "shadow-primary/20",
-  "Usage-based": "shadow-amber-500/20",
-  Hybrid: "shadow-cyan-500/20",
-  Custom: "shadow-emerald-500/20",
-};
-
 export function PlanTemplates() {
+  const navigate = useNavigate();
   const [templateList, setTemplateList] = useState(templates);
   const [menu, setMenu] = useState<number | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  const form = useForm<TemplateFormValues>({
-    defaultValues: {
-      name: "",
-      type: "Subscription",
-      price: "",
-      description: "",
-      features: "",
-      featured: false,
-    },
-  });
-
-  const handleTemplateSubmit = (values: TemplateFormValues) => {
-    const featureArray = values.features
-      .split(",")
-      .map(f => f.trim())
-      .filter(f => f.length > 0);
-
-    const newTemplate = {
-      id: templateList.length + 1,
-      name: values.name,
-      type: values.type,
-      price: values.price,
-      tenants: 0,
-      featured: values.featured,
-      description: values.description,
-      features: featureArray.length > 0 ? featureArray : ["Standard features included"],
-      icon: iconMap[values.type] || HelpCircle,
-      gradient: gradientMap[values.type] || "from-gray-500 via-gray-600 to-gray-700",
-      glow: glowMap[values.type] || "shadow-gray-500/20",
-    };
-
-    setTemplateList(prev => [...prev, newTemplate]);
-    setIsDialogOpen(false);
-    form.reset();
-    toast.success("Pricing template created successfully!");
-  };
 
   const deleteTemplate = (id: number) => {
     setTemplateList(prev => prev.filter(t => t.id !== id));
@@ -183,25 +74,14 @@ export function PlanTemplates() {
     setMenu(null);
   };
 
-  const getTemplateStyles = (type: string) => {
-    let color = "purple";
-    if (type === "Usage-based") color = "amber";
-    else if (type === "Hybrid") color = "cyan";
-    else if (type === "Custom") color = "emerald";
-
-    const accentMap: Record<string, string> = {
-      purple:  "from-purple-500 to-violet-500",
-      emerald: "from-emerald-500 to-teal-500",
-      amber:   "from-amber-500 to-orange-500",
-      cyan:    "from-cyan-500 to-sky-500",
-    };
-
+  const getTemplateStyles = (seed: string) => {
+    const theme = getCardTheme(seed);
     return {
-      border: `border-${color}-500/20 hover:border-${color}-500/40`,
-      glow: `hover:shadow-${color}-500/10`,
-      bgClass: `bg-gradient-to-br from-${color}-500/10 via-[#0b0b0f] to-${color}-500/5`,
-      bgGlow: `from-${color}-500/15 via-transparent to-transparent`,
-      topAccent: accentMap[color] || "from-violet-500 to-purple-500",
+      border: theme.border,
+      glow: theme.glow,
+      bgClass: theme.bgClass,
+      bgGlow: theme.bgGlow,
+      topAccent: theme.topAccent,
     };
   };
 
@@ -220,7 +100,7 @@ export function PlanTemplates() {
         <motion.button
           whileHover={{ scale: 1.03, y: -1 }}
           whileTap={{ scale: 0.97 }}
-          onClick={() => setIsDialogOpen(true)}
+          onClick={() => navigate("/super-admin/templates/create")}
           className="px-5 py-3 bg-gradient-to-r from-primary to-violet-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -233,23 +113,17 @@ export function PlanTemplates() {
         {[
           {
             label: "Total Templates", value: templateList.length,
-            gradient: "from-violet-600/20 via-transparent to-transparent",
-            glow: "bg-violet-500/10", border: "border-violet-500/20",
-            topAccent: "from-violet-500 to-purple-500",
           },
           {
             label: "Active Tenants", value: templateList.reduce((a, t) => a + t.tenants, 0),
-            gradient: "from-emerald-600/20 via-transparent to-transparent",
-            glow: "bg-emerald-500/10", border: "border-emerald-500/20",
-            topAccent: "from-emerald-500 to-teal-500",
           },
           {
             label: "Avg Tenants / Template", value: templateList.length > 0 ? (templateList.reduce((a, t) => a + t.tenants, 0) / templateList.length).toFixed(1) : "0",
-            gradient: "from-cyan-600/20 via-transparent to-transparent",
-            glow: "bg-cyan-500/10", border: "border-cyan-500/20",
-            topAccent: "from-cyan-500 to-sky-500",
           },
-        ].map((stat, i) => (
+        ].map((stat, i) => {
+          const theme = getCardThemeByIndex(i);
+          return { ...stat, gradient: theme.bgGlow, glow: "bg-white/10", border: theme.border, topAccent: theme.topAccent };
+        }).map((stat, i) => (
           <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 10 }}
@@ -273,7 +147,8 @@ export function PlanTemplates() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {templateList.map((tpl, i) => {
           const Icon = tpl.icon;
-          const styles = getTemplateStyles(tpl.type);
+          const theme = getCardTheme(tpl.type || tpl.name);
+          const styles = getTemplateStyles(tpl.type || tpl.name);
           return (
             <motion.div
               key={tpl.id}
@@ -291,8 +166,8 @@ export function PlanTemplates() {
               {/* Top */}
               <div className="flex items-start justify-between mb-4 relative z-10">
                 <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 bg-gradient-to-br ${tpl.gradient} rounded-xl flex items-center justify-center shadow-lg ${tpl.glow}`}>
-                    <Icon className="w-4 h-4 text-white" />
+                  <div className={`w-10 h-10 bg-gradient-to-br ${theme.iconBg} rounded-xl flex items-center justify-center shadow-lg`}>
+                    <Icon className={`w-4 h-4 ${theme.iconColor}`} />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -301,7 +176,7 @@ export function PlanTemplates() {
                         <span className="px-1.5 py-0.5 bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold rounded uppercase tracking-wider">Featured</span>
                       )}
                     </div>
-                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-lg border ${typeColors[tpl.type]}`}>
+                    <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-lg border ${theme.border} ${theme.iconColor}`}>
                       {tpl.type}
                     </span>
                   </div>
@@ -363,141 +238,6 @@ export function PlanTemplates() {
           );
         })}
       </div>
-
-      {/* Creation Modal */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-[#0b0b0f] border border-white/[0.08] rounded-3xl p-6 sm:p-8 max-w-md text-white">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-extrabold text-white flex items-center gap-2">
-              <FileText className="w-5 h-5 text-primary" />
-              <span>Create Template</span>
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Define a new billing template structure that tenants can inherit.
-            </DialogDescription>
-          </DialogHeader>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleTemplateSubmit)} className="space-y-4 mt-4">
-              <FormField
-                control={form.control}
-                name="name"
-                rules={{ required: "Template name is required" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-semibold text-white">Template Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="E.g. Pro SaaS Plan, Enterprise Core" className="bg-white/5 border-white/[0.06] focus:border-primary text-sm rounded-xl py-2 px-3 text-white" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-semibold text-white">Pricing Model Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="bg-white/5 border-white/[0.06] text-white">
-                          <SelectValue placeholder="Select plan model" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-[#0b0b0f] border border-white/[0.08] text-white">
-                        <SelectItem value="Subscription">Subscription (Flat Rate)</SelectItem>
-                        <SelectItem value="Usage-based">Usage-based (Metered)</SelectItem>
-                        <SelectItem value="Hybrid">Hybrid (Flat + Usage)</SelectItem>
-                        <SelectItem value="Custom">Custom (Negotiated)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="price"
-                rules={{ required: "Price description is required" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-semibold text-white">Price Statement</FormLabel>
-                    <FormControl>
-                      <Input placeholder="E.g. $49/mo, $0.05/call, Negotiated" className="bg-white/5 border-white/[0.06] focus:border-primary text-sm rounded-xl py-2 px-3 text-white" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                rules={{ required: "Description is required" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-semibold text-white">Description Summary</FormLabel>
-                    <FormControl>
-                      <Input placeholder="E.g. Full-scale subscription model..." className="bg-white/5 border-white/[0.06] focus:border-primary text-sm rounded-xl py-2 px-3 text-white" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="features"
-                rules={{ required: "Provide at least one feature parameter" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-semibold text-white">Included Features (comma-separated)</FormLabel>
-                    <FormControl>
-                      <Input placeholder="E.g. 100K API Calls, Unlimited Storage, Email Support" className="bg-white/5 border-white/[0.06] focus:border-primary text-sm rounded-xl py-2 px-3 text-white" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="featured"
-                render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-xl border border-white/[0.06] p-4 bg-white/[0.01]">
-                    <FormControl>
-                      <Checkbox
-                        checked={field.value}
-                        onCheckedChange={field.onChange}
-                      />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="text-xs font-semibold text-white">
-                        Feature this template
-                      </FormLabel>
-                      <p className="text-[10px] text-muted-foreground">
-                        Showcase this pricing plan with high priority and special badges.
-                      </p>
-                    </div>
-                  </FormItem>
-                )}
-              />
-
-              <DialogFooter className="pt-4 border-t border-white/[0.04] gap-3">
-                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="bg-white/5 border border-white/[0.06] hover:bg-white/10 text-xs font-semibold rounded-xl text-white">
-                  Cancel
-                </Button>
-                <Button type="submit" className="bg-gradient-to-r from-primary to-violet-600 text-xs font-bold rounded-xl text-white px-6">
-                  Create Template
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
     </motion.div>
   );
 }

@@ -1,18 +1,18 @@
 import { motion } from "motion/react";
 import { 
-  DollarSign, 
-  TrendingUp, 
-  TrendingDown, 
-  Building2, 
+  DollarSign,
+  TrendingUp,
+  Building2,
   Percent,
-  ArrowUpRight,
   CalendarDays
 } from "lucide-react";
-import { 
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  BarChart, Bar, Cell, Legend
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, Legend
 } from "recharts";
 import { useState } from "react";
+import { StatCard } from "../../components/StatCard";
+import { getCardThemeByIndex } from "../../components/cardThemes";
 
 const revenueData = [
   { month: "Oct", platform: 42000, commission: 4200 },
@@ -21,6 +21,21 @@ const revenueData = [
   { month: "Jan", platform: 67000, commission: 6700 },
   { month: "Feb", platform: 74000, commission: 7400 },
   { month: "Mar", platform: 85000, commission: 8500 },
+];
+
+const revenueRecognitionData = [
+  { month: "Oct", recognized: 145000, deferred: 62000 },
+  { month: "Nov", recognized: 158000, deferred: 66000 },
+  { month: "Dec", recognized: 167000, deferred: 71000 },
+  { month: "Jan", recognized: 178000, deferred: 76000 },
+  { month: "Feb", recognized: 188000, deferred: 81000 },
+  { month: "Mar", recognized: 198000, deferred: 87000 },
+];
+
+const recognitionStats = [
+  { label: "Recognized Revenue (This Month)", value: "$198K" },
+  { label: "Deferred Revenue", value: "$87K" },
+  { label: "Recognition Rate", value: "69%" },
 ];
 
 const topTenants = [
@@ -32,10 +47,10 @@ const topTenants = [
 ];
 
 const kpis = [
-  { label: "Platform Revenue",    value: "$285K",  trend: "+18.3%", up: true,  icon: DollarSign, color: "primary",    glow: "primary/20",      topAccent: "from-violet-500 to-purple-500",  border: "border-violet-500/20",  bgGrad: "from-violet-600/15 via-transparent to-transparent" },
-  { label: "Commission Earned",   value: "$28.5K", trend: "+18.3%", up: true,  icon: Percent,    color: "violet-400", glow: "violet-500/20",   topAccent: "from-purple-500 to-indigo-500",  border: "border-purple-500/20",  bgGrad: "from-purple-600/15 via-transparent to-transparent" },
-  { label: "Active Tenants",      value: "38",     trend: "+4",     up: true,  icon: Building2,  color: "cyan-400",   glow: "cyan-500/20",    topAccent: "from-cyan-500 to-sky-500",       border: "border-cyan-500/20",    bgGrad: "from-cyan-600/15 via-transparent to-transparent" },
-  { label: "Avg Commission Rate", value: "10%",    trend: "Stable", up: null,  icon: TrendingUp, color: "emerald-400",glow: "emerald-500/20", topAccent: "from-emerald-500 to-teal-500",   border: "border-emerald-500/20", bgGrad: "from-emerald-600/15 via-transparent to-transparent" },
+  { label: "Platform Revenue",    value: "$285K",  trend: "+18.3%", up: true,  icon: DollarSign },
+  { label: "Commission Earned",   value: "$28.5K", trend: "+18.3%", up: true,  icon: Percent },
+  { label: "Active Tenants",      value: "38",     trend: "+4",     up: true,  icon: Building2 },
+  { label: "Avg Commission Rate", value: "10%",    trend: "Stable", up: null,  icon: TrendingUp },
 ];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -91,40 +106,18 @@ export function PlatformRevenue() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map((kpi, i) => {
-          const Icon = kpi.icon;
-          return (
-          <motion.div
-              key={kpi.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.07 }}
-              className={`relative p-5 bg-card border ${kpi.border} rounded-2xl overflow-hidden transition-all duration-300 group`}
-            >
-              {/* Top accent bar */}
-              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${kpi.topAccent} rounded-t-2xl pointer-events-none`} />
-              {/* Gradient tint */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${kpi.bgGrad} pointer-events-none`} />
-              {/* Glow orb */}
-              <div className={`absolute -bottom-4 -right-4 w-24 h-24 bg-${kpi.glow} rounded-full blur-xl opacity-40`} />
-              <div className="relative z-10 flex items-center justify-between mb-4">
-                <div className={`w-9 h-9 rounded-xl bg-${kpi.color}/10 border border-${kpi.color}/20 flex items-center justify-center`}>
-                  <Icon className={`w-4 h-4 text-${kpi.color}`} />
-                </div>
-                <div className={`flex items-center gap-1 text-[10px] font-bold rounded-full px-2 py-0.5 ${
-                  kpi.up === true ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" :
-                  kpi.up === false ? "bg-rose-500/10 text-rose-400 border border-rose-500/20" :
-                  "bg-white/5 text-muted-foreground border border-white/[0.06]"
-                }`}>
-                  {kpi.up === true && <ArrowUpRight className="w-3 h-3" />}
-                  {kpi.trend}
-                </div>
-              </div>
-              <div className="relative z-10 text-2xl font-black text-white mb-0.5">{kpi.value}</div>
-              <div className="relative z-10 text-xs text-muted-foreground">{kpi.label}</div>
-            </motion.div>
-          );
-        })}
+        {kpis.map((kpi, i) => (
+          <StatCard
+            key={kpi.label}
+            title={kpi.label}
+            value={kpi.value}
+            change={kpi.trend}
+            changeType={kpi.up === true ? "positive" : kpi.up === false ? "negative" : "neutral"}
+            icon={kpi.icon}
+            delay={i * 0.07}
+            colorIndex={i}
+          />
+        ))}
       </div>
 
       {/* Charts Row */}
@@ -134,14 +127,14 @@ export function PlatformRevenue() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
-          className="relative lg:col-span-2 p-6 bg-card border border-violet-500/20 rounded-2xl overflow-hidden"
+          className={`relative lg:col-span-2 p-6 bg-card border ${getCardThemeByIndex(0).border} rounded-2xl overflow-hidden`}
         >
           {/* Top accent bar */}
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-500 to-cyan-500 rounded-t-2xl pointer-events-none" />
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(0).topAccent} rounded-t-2xl pointer-events-none`} />
           {/* Gradient tint */}
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 via-transparent to-cyan-600/5 pointer-events-none" />
+          <div className={`absolute inset-0 bg-gradient-to-br ${getCardThemeByIndex(0).bgGlow} pointer-events-none`} />
           {/* Glow orb */}
-          <div className="absolute -top-6 -right-6 w-36 h-36 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className={`absolute -top-6 -right-6 w-36 h-36 ${getCardThemeByIndex(0).orb10} rounded-full blur-3xl pointer-events-none`} />
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-sm font-bold text-white">Revenue Trend</h3>
@@ -180,14 +173,14 @@ export function PlatformRevenue() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="relative p-6 bg-card border border-indigo-500/20 rounded-2xl overflow-hidden"
+          className={`relative p-6 bg-card border ${getCardThemeByIndex(1).border} rounded-2xl overflow-hidden`}
         >
           {/* Top accent bar */}
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-indigo-500 to-violet-500 rounded-t-2xl pointer-events-none" />
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(1).topAccent} rounded-t-2xl pointer-events-none`} />
           {/* Gradient tint */}
-          <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/10 via-transparent to-transparent pointer-events-none" />
+          <div className={`absolute inset-0 bg-gradient-to-br ${getCardThemeByIndex(1).bgGlow} pointer-events-none`} />
           {/* Glow orb */}
-          <div className="absolute -bottom-8 -right-8 w-36 h-36 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
+          <div className={`absolute -bottom-8 -right-8 w-36 h-36 ${getCardThemeByIndex(1).orb5} rounded-full blur-3xl pointer-events-none`} />
           <h3 className="text-sm font-bold text-white mb-5">Top Revenue Tenants</h3>
           <div className="space-y-4">
             {topTenants.map((t, i) => {
@@ -213,6 +206,56 @@ export function PlatformRevenue() {
           </div>
         </motion.div>
       </div>
+
+      {/* Revenue Recognition (ASC 606) */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.45 }}
+        className={`relative p-6 bg-card border ${getCardThemeByIndex(2).border} rounded-2xl overflow-hidden`}
+      >
+        {/* Top accent bar */}
+        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(2).topAccent} rounded-t-2xl pointer-events-none`} />
+        {/* Gradient tint */}
+        <div className={`absolute inset-0 bg-gradient-to-br ${getCardThemeByIndex(2).bgGlow} pointer-events-none`} />
+        {/* Glow orb */}
+        <div className={`absolute -top-8 -left-8 w-40 h-40 ${getCardThemeByIndex(2).orb10} rounded-full blur-3xl pointer-events-none`} />
+
+        <div className="mb-6">
+          <h3 className="text-sm font-bold text-white">Revenue Recognition</h3>
+          <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl">
+            Deferred revenue reflects prepaid annual subscriptions recognized proportionally over the contract term (ASC 606).
+          </p>
+        </div>
+
+        {/* Summary stats */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          {recognitionStats.map((s) => (
+            <div
+              key={s.label}
+              className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4"
+            >
+              <div className="text-xs text-muted-foreground mb-1.5">{s.label}</div>
+              <div className="text-xl font-extrabold text-white">{s.value}</div>
+            </div>
+          ))}
+        </div>
+
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={revenueRecognitionData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+            <XAxis dataKey="month" stroke="#3f3f50" tick={{ fill: "#71717a", fontSize: 10 }} />
+            <YAxis stroke="#3f3f50" tick={{ fill: "#71717a", fontSize: 10 }} />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend
+              wrapperStyle={{ fontSize: 11, color: "#a1a1aa" }}
+              formatter={(value: string) => value.charAt(0).toUpperCase() + value.slice(1)}
+            />
+            <Bar dataKey="recognized" stackId="rev" fill="#10B981" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="deferred" stackId="rev" fill="#F59E0B" radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </motion.div>
     </motion.div>
   );
 }

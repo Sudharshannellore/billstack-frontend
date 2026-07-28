@@ -13,6 +13,8 @@ import {
   BarChart3,
   User,
   Zap,
+  Wallet as WalletIcon,
+  Webhook,
 } from "lucide-react";
 
 const navItems: NavItem[] = [
@@ -23,10 +25,13 @@ const navItems: NavItem[] = [
   { label: "Subscriptions", path: "/tenant/subscriptions", icon: Repeat },
   { label: "Coupons", path: "/tenant/coupons", icon: FileText },
   { label: "Top-ups", path: "/tenant/topups", icon: Zap },
+  { label: "Wallet", path: "/tenant/wallet", icon: WalletIcon },
   { label: "Usage", path: "/tenant/usage", icon: Activity },
+  { label: "Billing", path: "/tenant/billing", icon: CreditCard },
   { label: "Invoices", path: "/tenant/invoices", icon: FileText },
   { label: "API Keys", path: "/tenant/api-keys", icon: Key },
   { label: "API Docs", path: "/tenant/api-docs", icon: BookOpen },
+  { label: "Webhooks", path: "/tenant/webhooks", icon: Webhook },
   { label: "Analytics", path: "/tenant/analytics/revenue", icon: BarChart3 },
   { label: "Profile", path: "/tenant/profile", icon: User },
 ];

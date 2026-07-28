@@ -2,8 +2,13 @@ import { motion } from "motion/react";
 import { User, Bell, Shield, Mail, Building, Save, CheckCircle2 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../../components/ui/tabs";
 import { Button } from "../../components/ui/button";
+import { getCardThemeByIndex } from "../../components/cardThemes";
 
 export function TenantProfile() {
+  const generalTheme = getCardThemeByIndex(0);
+  const notificationsTheme = getCardThemeByIndex(1);
+  const securityTheme = getCardThemeByIndex(2);
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <div>
@@ -31,11 +36,18 @@ export function TenantProfile() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-6 bg-card border border-border rounded-xl space-y-6"
+            className={`relative p-6 bg-card border ${generalTheme.border} rounded-xl space-y-6 overflow-hidden`}
           >
-            <div>
+            {/* Top accent bar */}
+            <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${generalTheme.topAccent} rounded-t-xl pointer-events-none`} />
+            {/* Gradient tint */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${generalTheme.bgGlow} pointer-events-none`} />
+            {/* Glow orb */}
+            <div className={`absolute -bottom-10 -right-10 w-40 h-40 ${generalTheme.orb10} rounded-full blur-3xl pointer-events-none`} />
+
+            <div className="relative z-10">
               <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                <Building className="w-5 h-5 text-primary" />
+                <Building className={`w-5 h-5 ${generalTheme.iconColor}`} />
                 Company Information
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -90,9 +102,16 @@ export function TenantProfile() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-6 bg-card border border-border rounded-xl space-y-6"
+            className={`relative p-6 bg-card border ${notificationsTheme.border} rounded-xl space-y-6 overflow-hidden`}
           >
-            <div>
+            {/* Top accent bar */}
+            <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${notificationsTheme.topAccent} rounded-t-xl pointer-events-none`} />
+            {/* Gradient tint */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${notificationsTheme.bgGlow} pointer-events-none`} />
+            {/* Glow orb */}
+            <div className={`absolute -bottom-10 -right-10 w-40 h-40 ${notificationsTheme.orb10} rounded-full blur-3xl pointer-events-none`} />
+
+            <div className="relative z-10">
               <h3 className="text-lg font-semibold mb-4">Notification Preferences</h3>
               <p className="text-sm text-muted-foreground mb-6">Choose how you want to be notified about activity.</p>
               
@@ -130,15 +149,22 @@ export function TenantProfile() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="p-6 bg-card border border-border rounded-xl space-y-6"
+            className={`relative p-6 bg-card border ${securityTheme.border} rounded-xl space-y-6 overflow-hidden`}
           >
-            <div>
+            {/* Top accent bar */}
+            <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${securityTheme.topAccent} rounded-t-xl pointer-events-none`} />
+            {/* Gradient tint */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${securityTheme.bgGlow} pointer-events-none`} />
+            {/* Glow orb */}
+            <div className={`absolute -bottom-10 -right-10 w-40 h-40 ${securityTheme.orb10} rounded-full blur-3xl pointer-events-none`} />
+
+            <div className="relative z-10">
               <h3 className="text-lg font-semibold mb-4">Security Settings</h3>
-              
+
               <div className="space-y-6">
                 <div className="space-y-4">
                   <h4 className="text-sm font-medium flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-primary" />
+                    <Shield className={`w-4 h-4 ${securityTheme.iconColor}`} />
                     Change Password
                   </h4>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

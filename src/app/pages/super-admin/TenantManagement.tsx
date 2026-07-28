@@ -1,12 +1,13 @@
 import { motion, AnimatePresence } from "motion/react";
-import { 
+import {
   Building2, Check, X, Plus, MoreVertical, Search,
   Users, DollarSign, Calendar, ChevronRight, Shield,
-  TrendingUp, AlertCircle, CheckCircle2, Clock
+  TrendingUp, AlertCircle, CheckCircle2, Clock, LogIn, ShieldAlert
 } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { getCardThemeByIndex } from "../../components/cardThemes";
 import {
   Dialog,
   DialogContent,
@@ -15,23 +16,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from "../../components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "../../components/ui/form";
-import { Input } from "../../components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
-import { Button } from "../../components/ui/button";
 
 const allTenants = [
   { id: 1, name: "Acme Corp", email: "admin@acme.com", status: "active", revenue: "$28.5K", users: 245, joined: "Jan 15, 2026", plan: "Enterprise", growth: "+12%" },
@@ -42,37 +26,21 @@ const allTenants = [
   { id: 6, name: "API Master", email: "contact@apimaster.com", status: "pending", revenue: "$0", users: 0, joined: "Apr 13, 2026", plan: "—", growth: "" },
 ];
 
-const avatarColors = [
-  "from-primary to-violet-600",
-  "from-cyan-500 to-sky-600",
-  "from-emerald-500 to-teal-600",
-  "from-amber-500 to-orange-600",
-  "from-rose-500 to-pink-600",
-  "from-indigo-500 to-blue-600",
-];
-
-type TenantFormValues = {
-  name: string;
-  email: string;
-  status: "active" | "pending";
-  plan: string;
-};
-
 export function TenantManagement() {
+  const navigate = useNavigate();
   const [tenants, setTenants] = useState(allTenants);
   const [activeTab, setActiveTab] = useState<"active" | "pending">("active");
   const [search, setSearch] = useState("");
   const [approving, setApproving] = useState<number | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-
-  const form = useForm<TenantFormValues>({
-    defaultValues: {
-      name: "",
-      email: "",
-      status: "active",
-      plan: "SaaS Starter",
-    },
-  });
+  const [openMenuId, setOpenMenuId] = useState<number | null>(null);
+  const [impersonateTarget, setImpersonateTarget] = useState<{ id: number; name: string } | null>(null);
+  // Mock-only state: represents "currently impersonating" for demo purposes.
+  // In a real implementation, confirming impersonation would instead:
+  //   1) set a session-scoped auth context (e.g. an impersonation token/claim),
+  //   2) redirect into `/tenant/*` routes scoped to that tenant's identity,
+  //   3) write an audit-log entry (actor, target tenant, timestamp, reason).
+  // Here we just track a name locally and render a banner + toast to show the intended UX.
+  const [impersonatingTenant, setImpersonatingTenant] = useState<string | null>(null);
 
   const activeTenants = tenants.filter(t => t.status === "active");
   const pendingTenants = tenants.filter(t => t.status === "pending");
@@ -94,22 +62,16 @@ export function TenantManagement() {
     }, 1000);
   };
 
-  const handleTenantSubmit = (values: TenantFormValues) => {
-    const newTenant = {
-      id: tenants.length + 1,
-      name: values.name,
-      email: values.email,
-      status: values.status,
-      revenue: values.status === "active" ? "$0" : "$0",
-      users: 0,
-      joined: new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      plan: values.status === "active" ? values.plan : "—",
-      growth: values.status === "active" ? "+0%" : "",
-    };
-    setTenants(prev => [newTenant, ...prev]);
-    setIsDialogOpen(false);
-    form.reset();
-    toast.success("Tenant created successfully!");
+  const handleConfirmImpersonate = () => {
+    if (!impersonateTarget) return;
+    setImpersonatingTenant(impersonateTarget.name);
+    toast.success(`Now viewing as ${impersonateTarget.name} — remember to exit impersonation when done`);
+    setImpersonateTarget(null);
+  };
+
+  const handleExitImpersonation = () => {
+    setImpersonatingTenant(null);
+    toast.success("Returned to normal admin view");
   };
 
   return (
@@ -118,6 +80,31 @@ export function TenantManagement() {
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8 p-1 sm:p-4"
     >
+      {/* Impersonation Banner */}
+      <AnimatePresence>
+        {impersonatingTenant && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: "auto" }}
+            exit={{ opacity: 0, y: -10, height: 0 }}
+            className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl"
+          >
+            <div className="flex items-center gap-2 text-amber-300 text-sm font-semibold">
+              <span aria-hidden="true">🔒</span>
+              <span>Viewing as {impersonatingTenant}</span>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handleExitImpersonation}
+              className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-bold rounded-xl transition-colors"
+            >
+              Exit Impersonation
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -127,7 +114,7 @@ export function TenantManagement() {
         <motion.button
           whileHover={{ scale: 1.03, y: -1 }}
           whileTap={{ scale: 0.97 }}
-          onClick={() => setIsDialogOpen(true)}
+          onClick={() => navigate("/super-admin/tenants/create")}
           className="px-5 py-3 bg-gradient-to-r from-primary to-violet-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
@@ -140,58 +127,45 @@ export function TenantManagement() {
         {[
           {
             label: "Total Tenants", value: allTenants.length,
-            icon: Building2, color: "text-violet-300",
-            iconBg: "bg-violet-500/20 border border-violet-500/30",
-            gradient: "from-violet-600/20 via-transparent to-transparent",
-            glow: "bg-violet-500/10",
-            border: "border-violet-500/20",
-            topAccent: "bg-gradient-to-r from-violet-500 to-purple-500",
+            icon: Building2,
           },
           {
             label: "Active", value: activeTenants.length,
-            icon: CheckCircle2, color: "text-emerald-300",
-            iconBg: "bg-emerald-500/20 border border-emerald-500/30",
-            gradient: "from-emerald-600/20 via-transparent to-transparent",
-            glow: "bg-emerald-500/10",
-            border: "border-emerald-500/20",
-            topAccent: "bg-gradient-to-r from-emerald-500 to-teal-500",
+            icon: CheckCircle2,
           },
           {
             label: "Pending", value: pendingTenants.length,
-            icon: Clock, color: "text-amber-300",
-            iconBg: "bg-amber-500/20 border border-amber-500/30",
-            gradient: "from-amber-600/20 via-transparent to-transparent",
-            glow: "bg-amber-500/10",
-            border: "border-amber-500/20",
-            topAccent: "bg-gradient-to-r from-amber-500 to-orange-500",
+            icon: Clock,
           },
           {
             label: "Total Users", value: allTenants.reduce((a, t) => a + t.users, 0),
-            icon: Users, color: "text-cyan-300",
-            iconBg: "bg-cyan-500/20 border border-cyan-500/30",
-            gradient: "from-cyan-600/20 via-transparent to-transparent",
-            glow: "bg-cyan-500/10",
-            border: "border-cyan-500/20",
-            topAccent: "bg-gradient-to-r from-cyan-500 to-sky-500",
+            icon: Users,
           },
         ].map((stat, i) => {
           const Icon = stat.icon;
+          const theme = getCardThemeByIndex(i);
+          const color = theme.iconColor;
+          const iconBg = `bg-white/[0.04] border ${theme.border}`;
+          const gradient = theme.bgGlow;
+          const glow = "bg-white/10";
+          const border = theme.border;
+          const topAccent = `bg-gradient-to-r ${theme.topAccent}`;
           return (
             <motion.div
               key={stat.label}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
-              className={`relative overflow-hidden p-4 bg-card border ${stat.border} rounded-2xl flex items-center gap-3`}
+              className={`relative overflow-hidden p-4 bg-card border ${border} rounded-2xl flex items-center gap-3`}
             >
               {/* Top accent bar */}
-              <div className={`absolute top-0 left-0 right-0 h-[3px] ${stat.topAccent} rounded-t-2xl pointer-events-none`} />
+              <div className={`absolute top-0 left-0 right-0 h-[3px] ${topAccent} rounded-t-2xl pointer-events-none`} />
               {/* Gradient tint */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} pointer-events-none`} />
+              <div className={`absolute inset-0 bg-gradient-to-br ${gradient} pointer-events-none`} />
               {/* Glow orb */}
-              <div className={`absolute -bottom-4 -right-4 w-20 h-20 ${stat.glow} rounded-full blur-2xl pointer-events-none`} />
-              <div className={`relative z-10 w-10 h-10 rounded-xl ${stat.iconBg} flex items-center justify-center shrink-0`}>
-                <Icon className={`w-5 h-5 ${stat.color}`} />
+              <div className={`absolute -bottom-4 -right-4 w-20 h-20 ${glow} rounded-full blur-2xl pointer-events-none`} />
+              <div className={`relative z-10 w-10 h-10 rounded-xl ${iconBg} flex items-center justify-center shrink-0`}>
+                <Icon className={`w-5 h-5 ${color}`} />
               </div>
               <div className="relative z-10">
                 <div className="text-2xl font-black text-white">{stat.value}</div>
@@ -207,14 +181,14 @@ export function TenantManagement() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="relative bg-card border border-violet-500/20 rounded-2xl overflow-hidden"
+        className={`relative bg-card border ${getCardThemeByIndex(4).border} rounded-2xl overflow-hidden`}
       >
         {/* Top accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 pointer-events-none z-10" />
+        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(4).topAccent} pointer-events-none z-10`} />
         {/* Gradient tint */}
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 via-transparent to-indigo-600/5 pointer-events-none" />
+        <div className={`absolute inset-0 bg-gradient-to-br ${getCardThemeByIndex(4).bgGlow} pointer-events-none`} />
         {/* Glow orb */}
-        <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className={`absolute -bottom-10 -right-10 w-48 h-48 ${getCardThemeByIndex(4).orb5} rounded-full blur-3xl pointer-events-none`} />
         {/* Tab Bar + Search */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 border-b border-white/[0.04]">
           <div className="flex items-center gap-1 bg-white/[0.02] border border-white/[0.05] rounded-xl p-1">
@@ -302,7 +276,7 @@ export function TenantManagement() {
                       {/* Tenant Info */}
                       <td className="py-4 pl-6 pr-4">
                         <div className="flex items-center gap-3">
-                          <div className={`w-9 h-9 bg-gradient-to-br ${avatarColors[i % avatarColors.length]} rounded-xl flex items-center justify-center shrink-0`}>
+                          <div className={`w-9 h-9 bg-gradient-to-br ${getCardThemeByIndex(i).topAccent} rounded-xl flex items-center justify-center shrink-0`}>
                             <span className="text-white text-xs font-black">{tenant.name[0]}</span>
                           </div>
                           <div>
@@ -357,9 +331,43 @@ export function TenantManagement() {
                             </motion.button>
                           </div>
                         ) : (
-                          <button className="p-1.5 hover:bg-white/5 rounded-lg transition-colors text-muted-foreground hover:text-white">
-                            <MoreVertical className="w-4 h-4" />
-                          </button>
+                          <div className="relative flex justify-end">
+                            <button
+                              onClick={() => setOpenMenuId(openMenuId === tenant.id ? null : tenant.id)}
+                              className="p-1.5 hover:bg-white/5 rounded-lg transition-colors text-muted-foreground hover:text-white"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                            <AnimatePresence>
+                              {openMenuId === tenant.id && (
+                                <>
+                                  {/* Backdrop to close menu on outside click */}
+                                  <div
+                                    className="fixed inset-0 z-20"
+                                    onClick={() => setOpenMenuId(null)}
+                                  />
+                                  <motion.div
+                                    initial={{ opacity: 0, y: -6, scale: 0.97 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -6, scale: 0.97 }}
+                                    transition={{ duration: 0.12 }}
+                                    className="absolute right-0 top-9 z-30 w-52 bg-card border border-white/10 rounded-xl shadow-xl shadow-black/40 overflow-hidden py-1"
+                                  >
+                                    <button
+                                      onClick={() => {
+                                        setImpersonateTarget({ id: tenant.id, name: tenant.name });
+                                        setOpenMenuId(null);
+                                      }}
+                                      className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-white hover:bg-white/[0.06] transition-colors text-left"
+                                    >
+                                      <LogIn className="w-3.5 h-3.5 text-amber-400" />
+                                      Login as Tenant
+                                    </button>
+                                  </motion.div>
+                                </>
+                              )}
+                            </AnimatePresence>
+                          </div>
                         )}
                       </td>
                     </motion.tr>
@@ -371,115 +379,35 @@ export function TenantManagement() {
         </div>
       </motion.div>
 
-      {/* Creation Modal */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-[#0b0b0f] border border-white/[0.08] rounded-3xl p-6 sm:p-8 max-w-md text-white">
+      {/* Login as Tenant Confirmation Dialog */}
+      <Dialog open={impersonateTarget !== null} onOpenChange={(open) => !open && setImpersonateTarget(null)}>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-extrabold text-white flex items-center gap-2">
-              <Building2 className="w-5 h-5 text-primary" />
-              <span>Create Tenant</span>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-amber-400" />
+              Login as Tenant
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Register a new tenant organization on the platform.
+            <DialogDescription>
+              You are about to log in as {impersonateTarget?.name}. This action will be logged for security and audit purposes. Continue?
             </DialogDescription>
           </DialogHeader>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleTenantSubmit)} className="space-y-4 mt-4">
-              <FormField
-                control={form.control}
-                name="name"
-                rules={{ required: "Organization name is required" }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-semibold text-white">Organization Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Acme Corporation" className="bg-white/5 border-white/[0.06] focus:border-primary text-sm rounded-xl py-2 px-3 text-white" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="email"
-                rules={{ 
-                  required: "Administrator email is required",
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: "Invalid email address"
-                  }
-                }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-semibold text-white">Administrator Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="admin@acme.com" className="bg-white/5 border-white/[0.06] focus:border-primary text-sm rounded-xl py-2 px-3 text-white" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-semibold text-white">Initial Status</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="bg-white/5 border-white/[0.06] text-white">
-                          <SelectValue placeholder="Select initial status" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-[#0b0b0f] border border-white/[0.08] text-white">
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="pending">Pending Approval</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="plan"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs font-semibold text-white">Billing Plan</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="bg-white/5 border-white/[0.06] text-white">
-                          <SelectValue placeholder="Select billing plan" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-[#0b0b0f] border border-white/[0.08] text-white">
-                        <SelectItem value="SaaS Starter">SaaS Starter</SelectItem>
-                        <SelectItem value="API Usage">API Usage</SelectItem>
-                        <SelectItem value="Hybrid">Hybrid</SelectItem>
-                        <SelectItem value="Enterprise">Enterprise</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <DialogFooter className="pt-4 border-t border-white/[0.04] gap-3">
-                <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="bg-white/5 border border-white/[0.06] hover:bg-white/10 text-xs font-semibold rounded-xl text-white">
-                  Cancel
-                </Button>
-                <Button type="submit" className="bg-gradient-to-r from-primary to-violet-600 text-xs font-bold rounded-xl text-white px-6">
-                  Add Tenant
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
+          <DialogFooter>
+            <button
+              onClick={() => setImpersonateTarget(null)}
+              className="px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 text-white text-xs font-bold rounded-xl transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirmImpersonate}
+              className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-200 text-xs font-bold rounded-xl transition-colors"
+            >
+              Confirm
+            </button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </motion.div>
   );
 }

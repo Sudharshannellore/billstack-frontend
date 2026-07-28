@@ -26,6 +26,12 @@ import {
   BarChart,
   Bar
 } from "recharts";
+import { getCardThemeByIndex } from "../../components/cardThemes";
+
+// Small hex mapping for the 6 named themes, keyed in the same cycling order as cardThemes.ts
+// (purple, emerald, amber, cyan, rose, indigo) — used where a raw CSS/hex color value is
+// needed (e.g. recharts stroke/fill), since CARD_THEMES only exports Tailwind classes.
+const THEME_HEX = ["#8B5CF6", "#10B981", "#F59E0B", "#06B6D4", "#F43F5E", "#6366F1"];
 
 // Mock usage data with multiple metrics
 const usageHistory = [
@@ -84,7 +90,7 @@ export function Usage() {
       case "apiCalls":
         return {
           title: "API Gateway Requests",
-          color: "#8B5CF6",
+          color: THEME_HEX[0],
           gradient: "from-primary/20 to-primary/0",
           total: "1,53,500 units",
           quota: "10,00,000 max quota"
@@ -92,16 +98,16 @@ export function Usage() {
       case "storage":
         return {
           title: "Cloud Disk Storage",
-          color: "#06B6D4",
-          gradient: "from-cyan-500/20 to-cyan-500/0",
+          color: THEME_HEX[1],
+          gradient: "from-primary/20 to-primary/0",
           total: "64 GB",
           quota: "100 GB max quota"
         };
       case "compute":
         return {
           title: "vCPU/Memory Compute Hours",
-          color: "#10B981",
-          gradient: "from-emerald-500/20 to-emerald-500/0",
+          color: THEME_HEX[2],
+          gradient: "from-primary/20 to-primary/0",
           total: "157 Hrs",
           quota: "500 Hrs max quota"
         };
@@ -109,6 +115,9 @@ export function Usage() {
   };
 
   const currentDetails = getMetricDetails();
+
+  const mainChartTheme = getCardThemeByIndex(3);
+  const ingestionLogTheme = getCardThemeByIndex(4);
 
   return (
     <motion.div 
@@ -134,8 +143,7 @@ export function Usage() {
             percent: "15.3% used",
             quotaValue: 15.3,
             icon: Activity,
-            color: "text-primary border-primary bg-primary/5",
-            barColor: "bg-primary"
+            theme: getCardThemeByIndex(0)
           },
           {
             id: "storage" as const,
@@ -144,8 +152,7 @@ export function Usage() {
             percent: "64.2% used",
             quotaValue: 64.2,
             icon: Database,
-            color: "text-cyan-400 border-cyan-500/30 bg-cyan-500/5",
-            barColor: "bg-cyan-400"
+            theme: getCardThemeByIndex(1)
           },
           {
             id: "compute" as const,
@@ -154,8 +161,7 @@ export function Usage() {
             percent: "31.5% used",
             quotaValue: 31.5,
             icon: Cpu,
-            color: "text-emerald-400 border-emerald-500/30 bg-emerald-500/5",
-            barColor: "bg-emerald-400"
+            theme: getCardThemeByIndex(2)
           }
         ].map((tab) => {
           const Icon = tab.icon;
@@ -165,16 +171,19 @@ export function Usage() {
               key={tab.id}
               onClick={() => setSelectedMetric(tab.id)}
               whileHover={{ y: -3 }}
-              className={`p-6 border rounded-2xl text-left transition-all duration-300 ${
-                isSelected 
-                  ? `${tab.color} border-2 shadow-lg shadow-black/20`
+              className={`relative p-6 border rounded-2xl text-left transition-all duration-300 overflow-hidden ${
+                isSelected
+                  ? `bg-card ${tab.theme.border} border-2 shadow-lg shadow-black/20`
                   : "bg-card border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.01]"
               }`}
             >
-              <div className="flex items-center justify-between mb-4">
+              {isSelected && (
+                <div className={`absolute inset-0 bg-gradient-to-br ${tab.theme.bgGlow} pointer-events-none`} />
+              )}
+              <div className="relative z-10 flex items-center justify-between mb-4">
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">{tab.title}</span>
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-white/5`}>
-                  <Icon className="w-4 h-4" />
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${isSelected ? `bg-gradient-to-br ${tab.theme.iconBg}` : "bg-white/5"}`}>
+                  <Icon className={`w-4 h-4 ${isSelected ? tab.theme.iconColor : ""}`} />
                 </div>
               </div>
               <h3 className="text-2xl font-black text-white tracking-tight mb-2">{tab.value}</h3>
@@ -185,8 +194,8 @@ export function Usage() {
                   <span>{tab.percent}</span>
                 </div>
                 <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-500 ${tab.barColor}`} 
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 bg-gradient-to-r ${tab.theme.topAccent}`}
                     style={{ width: `${tab.quotaValue}%` }}
                   />
                 </div>
@@ -199,14 +208,14 @@ export function Usage() {
       {/* Main chart section */}
       <motion.div
         layout
-        className="relative p-6 bg-card border border-violet-500/20 rounded-2xl space-y-6 overflow-hidden"
+        className={`relative p-6 bg-card border ${mainChartTheme.border} rounded-2xl space-y-6 overflow-hidden`}
       >
         {/* Top accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 rounded-t-2xl pointer-events-none" />
+        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${mainChartTheme.topAccent} rounded-t-2xl pointer-events-none`} />
         {/* Gradient tint */}
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-600/8 via-transparent to-indigo-600/5 pointer-events-none" />
+        <div className={`absolute inset-0 bg-gradient-to-br ${mainChartTheme.bgGlow} pointer-events-none`} />
         {/* Glow orb */}
-        <div className="absolute -bottom-10 -right-10 w-56 h-56 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className={`absolute -bottom-10 -right-10 w-56 h-56 bg-gradient-to-br ${mainChartTheme.bgGlow} rounded-full blur-3xl pointer-events-none`} />
 
         <div className="relative z-10">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -258,21 +267,21 @@ export function Usage() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative bg-card border border-emerald-500/20 rounded-2xl p-6 overflow-hidden"
+        className={`relative bg-card border ${ingestionLogTheme.border} rounded-2xl p-6 overflow-hidden`}
       >
         {/* Top accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 rounded-t-2xl pointer-events-none" />
+        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${ingestionLogTheme.topAccent} rounded-t-2xl pointer-events-none`} />
         {/* Gradient tint */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/8 via-transparent to-teal-600/5 pointer-events-none" />
+        <div className={`absolute inset-0 bg-gradient-to-br ${ingestionLogTheme.bgGlow} pointer-events-none`} />
         {/* Glow orb */}
-        <div className="absolute -bottom-10 -right-10 w-56 h-56 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className={`absolute -bottom-10 -right-10 w-56 h-56 bg-gradient-to-br ${ingestionLogTheme.bgGlow} rounded-full blur-3xl pointer-events-none`} />
 
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div>
                 <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                  <Terminal className="w-5 h-5 text-emerald-400" />
+                  <Terminal className={`w-5 h-5 ${ingestionLogTheme.iconColor}`} />
                   <span>Live Event Ingestion Stream</span>
                 </h3>
                 <p className="text-xs text-muted-foreground font-light mt-0.5">Real-time usage API payload logs routed to the billing coordinator.</p>

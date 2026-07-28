@@ -10,12 +10,13 @@ import {
   Package,
   Check,
   CreditCard,
-  Database,
   Coins,
+  ListChecks,
 } from "lucide-react";
-import { BillingStyleSelector, BillingStyle } from "../../components/billing/BillingStyleSelector";
+import { BillingStyle } from "../../components/billing/BillingStyleSelector";
 import { MOCK_PRODUCTS } from "../../data/mock-plans";
 import { Input } from "../../components/ui/input";
+import { Textarea } from "../../components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -26,6 +27,8 @@ import {
 import { Label } from "../../components/ui/label";
 import { Button } from "../../components/ui/button";
 import { cn } from "../../components/ui/utils";
+import { getCardTheme } from "../../components/cardThemes";
+import { getCurrencySymbol } from "../../components/currency";
 
 const STEPS = ["Product", "Payment Type", "Configuration"];
 
@@ -37,6 +40,7 @@ const PAYMENT_TYPES = [
 const INITIAL_FORM_VALUES = {
   productId: "",
   productName: "",
+  productCurrency: "INR",
   billingStyle: null as BillingStyle | null,
   paymentType: "",
   name: "",
@@ -47,20 +51,42 @@ const INITIAL_FORM_VALUES = {
   totalCredits: "",
   unitName: "",
   pricePerUnit: "",
+  features: "",
 };
+
+// Mock "current live price" used to compute the proration preview when editing an existing plan.
+const MOCK_EXISTING_PRICE = 79;
+// Demo assumption: we are on day 12 of a 30-day billing cycle.
+const MOCK_CYCLE_DAY = 12;
+const MOCK_CYCLE_LENGTH = 30;
 
 interface CreatePlanProps {
   onSuccess?: () => void;
   onCancel?: () => void;
+  isEditing?: boolean;
 }
 
-export function CreatePlan({ onSuccess, onCancel }: CreatePlanProps) {
+export function CreatePlan({ onSuccess, onCancel, isEditing = false }: CreatePlanProps) {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [formValues, setFormValues] = useState(INITIAL_FORM_VALUES);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const prorationAmount = (() => {
+    const newPrice = parseFloat(formValues.price);
+    if (isNaN(newPrice)) return null;
+    const remainingDays = MOCK_CYCLE_LENGTH - MOCK_CYCLE_DAY;
+    const amount = ((newPrice - MOCK_EXISTING_PRICE) * remainingDays) / MOCK_CYCLE_LENGTH;
+    return amount;
+  })();
+
+  const prorationTheme = getCardTheme(
+    prorationAmount !== null && prorationAmount < 0 ? "proration-credit" : "proration-charge"
+  );
+
+  const currencySymbol = getCurrencySymbol(formValues.productCurrency);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormValues(prev => ({ ...prev, [name]: value }));
   };
@@ -92,12 +118,18 @@ export function CreatePlan({ onSuccess, onCancel }: CreatePlanProps) {
       config.price_per_unit = formValues.pricePerUnit;
     }
 
+    const features = formValues.features
+      .split(/[,\n]/)
+      .map((f) => f.trim())
+      .filter(Boolean);
+
     const payload = {
       product_id: formValues.productId,
       payment_type: formValues.paymentType,
       name: formValues.name,
       billing_style: formValues.billingStyle,
-      config: config
+      config: config,
+      features,
     };
 
     console.log("Submitting payload:", payload);
@@ -239,10 +271,11 @@ export function CreatePlan({ onSuccess, onCancel }: CreatePlanProps) {
                         key={prod.id}
                         whileHover={{ y: -4, scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
-                        onClick={() => setFormValues(prev => ({ 
-                          ...prev, 
-                          productId: prod.id, 
+                        onClick={() => setFormValues(prev => ({
+                          ...prev,
+                          productId: prod.id,
                           productName: prod.name,
+                          productCurrency: prod.currency ?? "INR",
                           billingStyle: prod.billingStyle
                         }))}
                         className={cn(
@@ -340,7 +373,7 @@ export function CreatePlan({ onSuccess, onCancel }: CreatePlanProps) {
                           <div className="space-y-2">
                             <Label className="text-sm font-bold italic">Base Price</Label>
                             <div className="relative">
-                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₹</span>
+                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{currencySymbol}</span>
                               <Input name="price" type="number" value={formValues.price} onChange={handleInputChange} className="pl-8 h-12" required />
                             </div>
                           </div>
@@ -370,7 +403,7 @@ export function CreatePlan({ onSuccess, onCancel }: CreatePlanProps) {
                           <div className="space-y-2">
                             <Label className="text-sm font-bold italic">Pack Price</Label>
                             <div className="relative">
-                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₹</span>
+                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{currencySymbol}</span>
                               <Input name="price" type="number" value={formValues.price} onChange={handleInputChange} className="pl-8 h-12" required />
                             </div>
                           </div>
@@ -386,7 +419,7 @@ export function CreatePlan({ onSuccess, onCancel }: CreatePlanProps) {
                           <div className="space-y-2">
                             <Label className="text-sm font-bold italic">One-time Cost</Label>
                             <div className="relative">
-                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₹</span>
+                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{currencySymbol}</span>
                               <Input name="price" type="number" value={formValues.price} onChange={handleInputChange} className="pl-8 h-12" required />
                             </div>
                           </div>
@@ -402,20 +435,58 @@ export function CreatePlan({ onSuccess, onCancel }: CreatePlanProps) {
                           <div className="space-y-2">
                             <Label className="text-sm font-bold italic">Price per {formValues.unitName || "item"}</Label>
                             <div className="relative">
-                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₹</span>
+                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">{currencySymbol}</span>
                               <Input name="pricePerUnit" type="number" step="0.0001" value={formValues.pricePerUnit} onChange={handleInputChange} className="pl-8 h-12" required />
                             </div>
                           </div>
                         </>
                       )}
+
+                      <div className="space-y-2">
+                        <Label htmlFor="features" className="text-sm font-bold italic flex items-center gap-2">
+                          <ListChecks className="w-4 h-4 text-primary" />
+                          <span>Included Features (one per line or comma-separated)</span>
+                        </Label>
+                        <Textarea
+                          id="features"
+                          name="features"
+                          value={formValues.features}
+                          onChange={handleInputChange}
+                          placeholder={"Up to 10,000 API calls/mo\n5 team seats\nPriority support"}
+                          className="min-h-[100px]"
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex items-center justify-center p-8 bg-primary/5 rounded-3xl border-2 border-dashed border-primary/20">
-                      <div className="text-center space-y-4">
-                        <Sparkles className="w-12 h-12 text-primary mx-auto opacity-50" />
-                        <p className="text-sm text-primary font-bold italic tracking-tight">
-                          BillStack is calculating the most efficient tax & compliance ledger for this {formValues.billingStyle} configuration.
-                        </p>
+                    <div className="space-y-6">
+                      {isEditing && prorationAmount !== null && (
+                        <div className={cn(
+                          "p-6 rounded-3xl border-2 relative overflow-hidden",
+                          prorationTheme.border
+                        )}>
+                          <div className={`absolute inset-0 bg-gradient-to-br ${prorationTheme.bgGlow} pointer-events-none`} />
+                          <div className="relative flex items-start gap-3">
+                            <Info className={cn("w-5 h-5 shrink-0 mt-0.5", prorationTheme.iconColor)} />
+                            <div className="space-y-1">
+                              <p className="text-sm font-bold italic">Proration preview</p>
+                              <p className="text-sm text-muted-foreground">
+                                Since it's day {MOCK_CYCLE_DAY} of a {MOCK_CYCLE_LENGTH}-day cycle, existing subscribers will be{" "}
+                                {prorationAmount >= 0 ? "charged" : "credited"} a prorated amount of ~{currencySymbol}
+                                {Math.abs(prorationAmount).toFixed(2)} on their next invoice reflecting the price change
+                                (from {currencySymbol}{MOCK_EXISTING_PRICE} to {currencySymbol}{formValues.price || "—"}).
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-center p-8 bg-primary/5 rounded-3xl border-2 border-dashed border-primary/20">
+                        <div className="text-center space-y-4">
+                          <Sparkles className="w-12 h-12 text-primary mx-auto opacity-50" />
+                          <p className="text-sm text-primary font-bold italic tracking-tight">
+                            BillStack is calculating the most efficient tax & compliance ledger for this {formValues.billingStyle} configuration.
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>

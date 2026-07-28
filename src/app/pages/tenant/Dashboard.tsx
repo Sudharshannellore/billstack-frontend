@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { StatCard } from "../../components/StatCard";
+import { getCardThemeByIndex } from "../../components/cardThemes";
 import { 
   IndianRupee, 
   Users, 
@@ -52,6 +53,9 @@ const recentSubscriptions = [
 ];
 
 export function TenantDashboard() {
+  const revenueTheme = getCardThemeByIndex(0);
+  const planShareTheme = getCardThemeByIndex(1);
+  const subsTheme = getCardThemeByIndex(2);
   return (
     <motion.div 
       initial={{ opacity: 0, y: 15 }} 
@@ -92,6 +96,7 @@ export function TenantDashboard() {
           changeType="positive"
           icon={IndianRupee}
           delay={0}
+          colorIndex={0}
         />
         <StatCard
           title="Active Customers"
@@ -100,6 +105,7 @@ export function TenantDashboard() {
           changeType="positive"
           icon={Users}
           delay={0.1}
+          colorIndex={1}
         />
         <StatCard
           title="Active Subscriptions"
@@ -108,6 +114,7 @@ export function TenantDashboard() {
           changeType="positive"
           icon={Repeat}
           delay={0.2}
+          colorIndex={2}
         />
         <StatCard
           title="MRR Growth"
@@ -116,6 +123,7 @@ export function TenantDashboard() {
           changeType="positive"
           icon={TrendingUp}
           delay={0.3}
+          colorIndex={3}
         />
         <StatCard
           title="Conversion Rate"
@@ -124,6 +132,7 @@ export function TenantDashboard() {
           changeType="positive"
           icon={CreditCard}
           delay={0.4}
+          colorIndex={4}
         />
         <StatCard
           title="API Events Ingested"
@@ -132,6 +141,7 @@ export function TenantDashboard() {
           changeType="positive"
           icon={Activity}
           delay={0.5}
+          colorIndex={5}
         />
       </div>
 
@@ -142,14 +152,14 @@ export function TenantDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="relative lg:col-span-8 p-6 bg-card border border-violet-500/20 rounded-2xl flex flex-col justify-between overflow-hidden"
+          className={`relative lg:col-span-8 p-6 bg-card border ${revenueTheme.border} rounded-2xl flex flex-col justify-between overflow-hidden`}
         >
           {/* Top accent bar */}
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 to-purple-500 rounded-t-2xl pointer-events-none" />
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${revenueTheme.topAccent} rounded-t-2xl pointer-events-none`} />
           {/* Gradient tint */}
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-600/10 via-transparent to-transparent pointer-events-none" />
+          <div className={`absolute inset-0 bg-gradient-to-br ${revenueTheme.bgGlow} pointer-events-none`} />
           {/* Glow orb */}
-          <div className="absolute -top-6 -right-6 w-32 h-32 bg-violet-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className={`absolute -top-6 -right-6 w-32 h-32 bg-gradient-to-br ${revenueTheme.bgGlow} rounded-full blur-3xl pointer-events-none`} />
           
           <div className="relative z-10 flex flex-col justify-between h-full w-full">
           <div className="flex items-center justify-between mb-6">
@@ -209,14 +219,14 @@ export function TenantDashboard() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
-          className="relative lg:col-span-4 p-6 bg-card border border-cyan-500/20 rounded-2xl flex flex-col justify-between overflow-hidden"
+          className={`relative lg:col-span-4 p-6 bg-card border ${planShareTheme.border} rounded-2xl flex flex-col justify-between overflow-hidden`}
         >
           {/* Top accent bar */}
-          <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-500 to-sky-500 rounded-t-2xl pointer-events-none" />
+          <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${planShareTheme.topAccent} rounded-t-2xl pointer-events-none`} />
           {/* Gradient tint */}
-          <div className="absolute inset-0 bg-gradient-to-br from-cyan-600/10 via-transparent to-transparent pointer-events-none" />
+          <div className={`absolute inset-0 bg-gradient-to-br ${planShareTheme.bgGlow} pointer-events-none`} />
           {/* Glow orb */}
-          <div className="absolute -top-6 -right-6 w-32 h-32 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className={`absolute -top-6 -right-6 w-32 h-32 bg-gradient-to-br ${planShareTheme.bgGlow} rounded-full blur-3xl pointer-events-none`} />
           
           <div className="relative z-10 flex flex-col justify-between h-full w-full">
           <div>
@@ -270,14 +280,14 @@ export function TenantDashboard() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8 }}
-        className="relative p-6 bg-card border border-emerald-500/20 rounded-2xl overflow-hidden"
+        className={`relative p-6 bg-card border ${subsTheme.border} rounded-2xl overflow-hidden`}
       >
         {/* Top accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-500 rounded-t-2xl pointer-events-none" />
+        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${subsTheme.topAccent} rounded-t-2xl pointer-events-none`} />
         {/* Gradient tint */}
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600/8 via-transparent to-transparent pointer-events-none" />
+        <div className={`absolute inset-0 bg-gradient-to-br ${subsTheme.bgGlow} pointer-events-none`} />
         {/* Glow orb */}
-        <div className="absolute -bottom-8 -right-8 w-48 h-48 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className={`absolute -bottom-8 -right-8 w-48 h-48 bg-gradient-to-br ${subsTheme.bgGlow} rounded-full blur-3xl pointer-events-none`} />
         
         <div className="relative z-10">
         <div className="flex items-center justify-between mb-6">

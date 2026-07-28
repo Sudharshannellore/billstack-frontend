@@ -1,171 +1,185 @@
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Package, MoreVertical, Edit, Trash2, X, Check, ArrowRight, HelpCircle, Layers, ArrowLeft } from "lucide-react";
+import { Plus, MoreVertical, Edit, Trash2, Layers, Copy, TrendingUp, TrendingDown, Pause, Play, FileEdit } from "lucide-react";
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "../../components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "../../components/ui/form";
-import { Input } from "../../components/ui/input";
-import { Textarea } from "../../components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../../components/ui/select";
-import { Button } from "../../components/ui/button";
-import { BillingStyleSelector, BillingStyle } from "../../components/billing/BillingStyleSelector";
+import { BillingStyle } from "../../components/billing/BillingStyleSelector";
 import { cn } from "../../components/ui/utils";
+import { getCardTheme } from "../../components/cardThemes";
+import { formatMoney } from "../../components/currency";
+
+type ProductStatus = "active" | "draft" | "paused";
+
+const STATUS_CYCLE: ProductStatus[] = ["active", "paused", "draft"];
 
 const productsData = [
   {
     id: 1,
     name: "Cloud Storage API",
     description: "Scalable cloud storage with REST API integrations.",
-    status: "active",
+    status: "active" as ProductStatus,
     billingStyle: "subscription" as BillingStyle,
     plans: 3,
     customers: 245,
+    currency: "INR",
+    monthlyRevenue: 128400,
+    growthPercent: 12.4,
+    adoptionRate: 78,
   },
   {
     id: 2,
     name: "Analytics Platform",
     description: "Real-time analytics and user insights dashboard.",
-    status: "active",
+    status: "active" as ProductStatus,
     billingStyle: "usage" as BillingStyle,
     plans: 4,
     customers: 128,
+    currency: "USD",
+    monthlyRevenue: 9840,
+    growthPercent: 6.1,
+    adoptionRate: 54,
   },
   {
     id: 3,
     name: "Email Services Gateway",
     description: "Transactional email delivery infrastructure.",
-    status: "active",
+    status: "active" as ProductStatus,
     billingStyle: "credits" as BillingStyle,
     plans: 2,
     customers: 89,
+    currency: "INR",
+    monthlyRevenue: 42150,
+    growthPercent: -3.8,
+    adoptionRate: 41,
+  },
+  {
+    id: 4,
+    name: "SMS Gateway",
+    description: "Global SMS delivery with real-time status callbacks.",
+    status: "active" as ProductStatus,
+    billingStyle: "telecom" as BillingStyle,
+    plans: 3,
+    customers: 172,
+    currency: "USD",
+    monthlyRevenue: 15620,
+    growthPercent: 9.2,
+    adoptionRate: 66,
+  },
+  {
+    id: 5,
+    name: "AI Inference Engine",
+    description: "Low-latency model inference for production workloads.",
+    status: "active" as ProductStatus,
+    billingStyle: "usage" as BillingStyle,
+    plans: 4,
+    customers: 61,
+    currency: "USD",
+    monthlyRevenue: 21300,
+    growthPercent: 24.7,
+    adoptionRate: 33,
+  },
+  {
+    id: 6,
+    name: "Video Transcoding Service",
+    description: "On-demand video encoding and format conversion pipeline.",
+    status: "active" as ProductStatus,
+    billingStyle: "credits" as BillingStyle,
+    plans: 3,
+    customers: 47,
+    currency: "USD",
+    monthlyRevenue: 7420,
+    growthPercent: -1.5,
+    adoptionRate: 22,
+  },
+  {
+    id: 7,
+    name: "Data Pipeline Orchestrator",
+    description: "Managed workflow orchestration for ETL and data jobs.",
+    status: "active" as ProductStatus,
+    billingStyle: "subscription" as BillingStyle,
+    plans: 3,
+    customers: 98,
+    currency: "INR",
+    monthlyRevenue: 68900,
+    growthPercent: 4.3,
+    adoptionRate: 59,
+  },
+  {
+    id: 8,
+    name: "Push Notification Service",
+    description: "Cross-platform push messaging for mobile and web apps.",
+    status: "draft" as ProductStatus,
+    billingStyle: "usage" as BillingStyle,
+    plans: 2,
+    customers: 15,
+    currency: "USD",
+    monthlyRevenue: 980,
+    growthPercent: -8.6,
+    adoptionRate: 9,
+  },
+  {
+    id: 9,
+    name: "Voice Calling API",
+    description: "Programmable voice calls and IVR for global numbers.",
+    status: "active" as ProductStatus,
+    billingStyle: "telecom" as BillingStyle,
+    plans: 3,
+    customers: 54,
+    currency: "USD",
+    monthlyRevenue: 11250,
+    growthPercent: 2.9,
+    adoptionRate: 46,
   },
 ];
 
-type ProductFormValues = {
-  name: string;
-  description: string;
-  status: string;
-  billingStyle: BillingStyle;
-};
-
-const PRODUCT_STEPS = ["Identity", "Logic", "Publish"];
+let nextProductId = productsData.length + 1;
 
 export function Products() {
+  const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState<number | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
   const [products, setProducts] = useState(productsData);
-
-  const form = useForm<ProductFormValues>({
-    defaultValues: {
-      name: "",
-      description: "",
-      status: "active",
-      billingStyle: "subscription",
-    },
-  });
-
-  const nextStep = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (isStepValid()) {
-      setCurrentStep(prev => Math.min(prev + 1, PRODUCT_STEPS.length - 1));
-    } else {
-      toast.error("Please fill out all required fields.");
-    }
-  };
-
-  const prevStep = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setCurrentStep(prev => Math.max(prev - 1, 0));
-  };
-
-  const isStepValid = () => {
-    const values = form.getValues();
-    switch (currentStep) {
-      case 0:
-        return !!values.name && !!values.description;
-      case 1:
-        return !!values.billingStyle;
-      case 2:
-        return true;
-      default:
-        return false;
-    }
-  };
-
-  const handleProductSubmit = (values: ProductFormValues) => {
-    const newProduct = {
-      id: products.length + 1,
-      name: values.name,
-      description: values.description,
-      status: values.status,
-      billingStyle: values.billingStyle,
-      plans: 0,
-      customers: 0,
-    };
-
-    setProducts([...products, newProduct]);
-    setIsDialogOpen(false);
-    form.reset();
-    setCurrentStep(0);
-    toast.success("Product created successfully!");
-  };
 
   const deleteProduct = (id: number) => {
     setProducts(products.filter(p => p.id !== id));
     toast.success("Product deleted successfully.");
   };
 
-  const getStyleColor = (style: BillingStyle) => {
-    switch (style) {
-      case "subscription": return "bg-primary/10 text-primary border-primary/20";
-      case "usage": return "bg-amber-500/10 text-amber-400 border-amber-500/20";
-      case "credits": return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-      case "telecom": return "bg-cyan-500/10 text-cyan-400 border-cyan-500/20";
-      default: return "bg-white/5 text-muted-foreground border-white/[0.08]";
-    }
+  const duplicateProduct = (id: number) => {
+    setProducts(prev => {
+      const source = prev.find(p => p.id === id);
+      if (!source) return prev;
+      const index = prev.findIndex(p => p.id === id);
+      const clone = { ...source, id: nextProductId++, name: `${source.name} (Copy)` };
+      const next = [...prev];
+      next.splice(index + 1, 0, clone);
+      return next;
+    });
+    toast.success("Product duplicated successfully.");
   };
 
-  const getProductStyles = (style: BillingStyle) => {
-    let color = "purple";
-    if (style === "usage") color = "amber";
-    else if (style === "credits") color = "emerald";
-    else if (style === "telecom") color = "cyan";
+  const cycleStatus = (id: number) => {
+    setProducts(prev =>
+      prev.map(p => {
+        if (p.id !== id) return p;
+        const currentIndex = STATUS_CYCLE.indexOf(p.status);
+        const nextStatus = STATUS_CYCLE[(currentIndex + 1) % STATUS_CYCLE.length];
+        toast.success(`${p.name} is now ${nextStatus}.`);
+        return { ...p, status: nextStatus };
+      })
+    );
+  };
 
-    const accentMap: Record<string, string> = {
-      purple:  "from-purple-500 to-violet-500",
-      emerald: "from-emerald-500 to-teal-500",
-      amber:   "from-amber-500 to-orange-500",
-      cyan:    "from-cyan-500 to-sky-500",
-    };
+  const getStyleColor = (theme: ReturnType<typeof getCardTheme>) =>
+    cn("bg-white/5", theme.iconColor, theme.border);
 
+  const getProductStyles = (product: (typeof productsData)[number]) => {
+    const theme = getCardTheme(product.name);
     return {
-      border: `border-${color}-500/20 hover:border-${color}-500/40`,
-      glow: `hover:shadow-${color}-500/10`,
-      bgClass: `bg-gradient-to-br from-${color}-500/10 via-[#0b0b0f] to-${color}-500/5`,
-      bgGlow: `from-${color}-500/15 via-transparent to-transparent`,
-      topAccent: accentMap[color] || "from-violet-500 to-purple-500",
+      border: theme.border,
+      glow: theme.glow,
+      bgClass: theme.bgClass,
+      bgGlow: theme.bgGlow,
+      topAccent: theme.topAccent,
     };
   };
 
@@ -184,7 +198,7 @@ export function Products() {
         <motion.button
           whileHover={{ scale: 1.03, y: -1 }}
           whileTap={{ scale: 0.97 }}
-          onClick={() => setIsDialogOpen(true)}
+          onClick={() => navigate("/tenant/products/create")}
           className="px-5 py-3 bg-gradient-to-r from-primary to-violet-600 hover:from-primary-dark hover:to-violet-700 text-white text-sm font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center gap-2"
         >
           <Plus className="w-5 h-5" />
@@ -196,7 +210,8 @@ export function Products() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AnimatePresence>
           {products.map((product) => {
-            const styles = getProductStyles(product.billingStyle);
+            const theme = getCardTheme(product.name);
+            const styles = getProductStyles(product);
             return (
               <motion.div
                 key={product.id}
@@ -205,7 +220,7 @@ export function Products() {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 whileHover={{ y: -4 }}
-                className={`relative overflow-hidden ${styles.bgClass} border ${styles.border} hover:shadow-xl ${styles.glow} rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between h-[210px] group`}
+                className={`relative overflow-hidden ${styles.bgClass} border ${styles.border} hover:shadow-xl ${styles.glow} rounded-2xl p-6 transition-all duration-300 flex flex-col justify-between h-[266px] group`}
               >
                 {/* Top accent bar */}
                 <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${styles.topAccent} rounded-t-2xl pointer-events-none`} />
@@ -213,41 +228,64 @@ export function Products() {
                 <div className={`absolute inset-0 bg-gradient-to-br ${styles.bgGlow} opacity-30 pointer-events-none`} />
                 {/* Glow orb */}
                 <div className="absolute -bottom-6 -right-6 w-24 h-24 bg-white/5 rounded-full blur-2xl pointer-events-none" />
-                
+
                 <div className="relative z-10 w-full">
                 <div className="flex items-start justify-between mb-3">
                   <span className={cn(
                     "px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border",
-                    getStyleColor(product.billingStyle)
+                    getStyleColor(theme)
                   )}>
                     {product.billingStyle}
                   </span>
-                  
-                  <div className="relative">
-                    <button 
-                      onClick={() => setShowMenu(showMenu === product.id ? null : product.id)}
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => duplicateProduct(product.id)}
+                      title="Duplicate product"
                       className="p-1 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-white transition-colors"
                     >
-                      <MoreVertical className="w-4 h-4" />
+                      <Copy className="w-3.5 h-3.5" />
                     </button>
-                    {showMenu === product.id && (
-                      <>
-                        <div className="fixed inset-0 z-10" onClick={() => setShowMenu(null)} />
-                        <div className="absolute right-0 mt-1 w-32 bg-[#0c0c12] border border-white/[0.08] rounded-xl shadow-xl py-1.5 z-20">
-                          <button className="w-full px-4 py-2 text-left text-xs font-semibold text-white hover:bg-white/5 transition-colors flex items-center gap-2">
-                            <Edit className="w-3.5 h-3.5 text-muted-foreground" />
-                            <span>Edit</span>
-                          </button>
-                          <button 
-                            onClick={() => deleteProduct(product.id)}
-                            className="w-full px-4 py-2 text-left text-xs font-semibold text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center gap-2"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>Delete</span>
-                          </button>
-                        </div>
-                      </>
-                    )}
+                    <button
+                      onClick={() => cycleStatus(product.id)}
+                      title={`Status: ${product.status} (click to change)`}
+                      className={cn(
+                        "p-1 rounded-lg hover:bg-white/5 transition-colors",
+                        product.status === "active" && "text-emerald-400",
+                        product.status === "paused" && "text-amber-400",
+                        product.status === "draft" && "text-muted-foreground"
+                      )}
+                    >
+                      {product.status === "active" && <Play className="w-3.5 h-3.5" />}
+                      {product.status === "paused" && <Pause className="w-3.5 h-3.5" />}
+                      {product.status === "draft" && <FileEdit className="w-3.5 h-3.5" />}
+                    </button>
+                    <div className="relative">
+                      <button
+                        onClick={() => setShowMenu(showMenu === product.id ? null : product.id)}
+                        className="p-1 rounded-lg hover:bg-white/5 text-muted-foreground hover:text-white transition-colors"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                      {showMenu === product.id && (
+                        <>
+                          <div className="fixed inset-0 z-10" onClick={() => setShowMenu(null)} />
+                          <div className="absolute right-0 mt-1 w-32 bg-[#0c0c12] border border-white/[0.08] rounded-xl shadow-xl py-1.5 z-20">
+                            <button className="w-full px-4 py-2 text-left text-xs font-semibold text-white hover:bg-white/5 transition-colors flex items-center gap-2">
+                              <Edit className="w-3.5 h-3.5 text-muted-foreground" />
+                              <span>Edit</span>
+                            </button>
+                            <button
+                              onClick={() => deleteProduct(product.id)}
+                              className="w-full px-4 py-2 text-left text-xs font-semibold text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center gap-2"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>Delete</span>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -257,157 +295,55 @@ export function Products() {
                 <p className="text-xs text-muted-foreground font-light leading-relaxed line-clamp-2">
                   {product.description}
                 </p>
+
+                {/* Revenue + trend */}
+                <div className="flex items-center gap-1.5 mt-2.5 text-xs">
+                  <span className="font-bold text-white">{formatMoney(product.monthlyRevenue, product.currency)}</span>
+                  <span className="text-muted-foreground font-light">this month</span>
+                  <span className={cn(
+                    "flex items-center gap-0.5 font-semibold ml-1",
+                    product.growthPercent >= 0 ? "text-emerald-400" : "text-rose-400"
+                  )}>
+                    {product.growthPercent >= 0
+                      ? <TrendingUp className="w-3 h-3" />
+                      : <TrendingDown className="w-3 h-3" />}
+                    {Math.abs(product.growthPercent).toFixed(1)}%
+                  </span>
+                </div>
               </div>
 
               {/* Lower statistics */}
-              <div className="flex items-center justify-between border-t border-white/[0.04] pt-4 mt-4 text-xs font-medium">
-                <div className="flex items-center gap-1.5 text-muted-foreground">
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>{product.plans} active plans</span>
+              <div className="relative z-10">
+                <div className="flex items-center justify-between border-t border-white/[0.04] pt-4 mt-4 text-xs font-medium">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>{product.plans} active plans</span>
+                  </div>
+                  <div className="text-muted-foreground">
+                    <span className="text-white font-bold">{product.customers}</span> subscribers
+                  </div>
                 </div>
-                <div className="text-muted-foreground">
-                  <span className="text-white font-bold">{product.customers}</span> subscribers
+
+                {/* Adoption rate bar */}
+                <div className="mt-3">
+                  <div className="flex items-center justify-between mb-1 text-[10px] text-muted-foreground font-medium">
+                    <span>Adoption rate</span>
+                    <span className="text-white font-bold">{product.adoptionRate}%</span>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
+                    <div
+                      className={`h-full rounded-full bg-gradient-to-r ${styles.topAccent}`}
+                      style={{ width: `${Math.min(100, Math.max(0, product.adoptionRate))}%` }}
+                    />
+                  </div>
                 </div>
-                </div>
+              </div>
               </motion.div>
             );
           })}
         </AnimatePresence>
       </div>
 
-      {/* Creation Modal Wizard */}
-      <Dialog open={isDialogOpen} onOpenChange={(open) => {
-        setIsDialogOpen(open);
-        if (!open) {
-          form.reset();
-          setCurrentStep(0);
-        }
-      }}>
-        <DialogContent className="bg-[#0b0b0f] border border-white/[0.08] rounded-3xl p-6 sm:p-8 max-w-xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-extrabold text-white flex items-center gap-2">
-              <Package className="w-5 h-5 text-primary" />
-              <span>Create Product Config</span>
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground">
-              Configure SaaS catalogs, routing paths, and payment architectures.
-            </DialogDescription>
-          </DialogHeader>
-
-          {/* Stepper indicators */}
-          <div className="flex items-center justify-between my-6 border-b border-white/[0.04] pb-4">
-            {PRODUCT_STEPS.map((step, idx) => (
-              <div key={step} className="flex items-center gap-2 text-xs">
-                <span className={cn(
-                  "w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] transition-all",
-                  idx <= currentStep 
-                    ? "bg-primary text-white" 
-                    : "bg-white/5 border border-white/[0.06] text-muted-foreground"
-                )}>
-                  {idx + 1}
-                </span>
-                <span className={cn(
-                  "font-bold",
-                  idx === currentStep ? "text-white" : "text-muted-foreground"
-                )}>
-                  {step}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleProductSubmit)} className="space-y-6">
-              <div className="min-h-[220px] flex flex-col justify-center">
-                {currentStep === 0 && (
-                  <motion.div initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      rules={{ required: true }}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs font-semibold text-white">Product Name</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Acme Database Storage API" className="bg-white/5 border-white/[0.06] focus:border-primary text-sm rounded-xl py-2 px-3 text-white" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      rules={{ required: true }}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs font-semibold text-white">Description</FormLabel>
-                          <FormControl>
-                            <Textarea placeholder="Explain what services, aggregates, or resource access this product configuration facilitates." className="bg-white/5 border-white/[0.06] focus:border-primary text-sm rounded-xl py-2 px-3 text-white min-h-[90px]" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </motion.div>
-                )}
-
-                {currentStep === 1 && (
-                  <motion.div initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="billingStyle"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-xs font-semibold text-white mb-2 block">Billing Architecture Logic</FormLabel>
-                          <FormControl>
-                            <BillingStyleSelector value={field.value} onChange={field.onChange} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </motion.div>
-                )}
-
-                {currentStep === 2 && (
-                  <motion.div initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }} className="space-y-4 text-center py-6 bg-white/[0.01] border border-white/[0.04] rounded-2xl">
-                    <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-3">
-                      <Check className="w-6 h-6 text-emerald-400" />
-                    </div>
-                    <h4 className="text-base font-extrabold text-white">Review & Deploy</h4>
-                    <p className="text-xs text-muted-foreground max-w-sm mx-auto font-light leading-relaxed">
-                      Confirming deployment for <span className="text-primary font-bold">{form.getValues("name")}</span>. New billing lines will immediately activate in Sandbox.
-                    </p>
-                  </motion.div>
-                )}
-              </div>
-
-              <DialogFooter className="flex items-center justify-between border-t border-white/[0.04] pt-4 gap-3">
-                <div className="flex items-center gap-2 w-full">
-                  {currentStep > 0 && (
-                    <Button type="button" onClick={prevStep} className="bg-white/5 border border-white/[0.06] hover:bg-white/10 text-xs font-semibold rounded-xl text-white">
-                      <ArrowLeft className="w-3.5 h-3.5 mr-1" />
-                      <span>Back</span>
-                    </Button>
-                  )}
-                  
-                  {currentStep < PRODUCT_STEPS.length - 1 ? (
-                    <Button type="button" onClick={nextStep} className="bg-primary hover:bg-primary-dark ml-auto text-xs font-semibold rounded-xl text-white">
-                      <span>Next Step</span>
-                      <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                    </Button>
-                  ) : (
-                    <Button type="submit" className="bg-gradient-to-r from-primary to-violet-600 text-xs font-bold rounded-xl ml-auto text-white px-6">
-                      Deploy Product
-                    </Button>
-                  )}
-                </div>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
     </motion.div>
   );
 }

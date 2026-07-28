@@ -1,9 +1,9 @@
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  FileSearch, 
-  Filter, 
-  Search, 
-  ShieldCheck, 
+import {
+  FileSearch,
+  Filter,
+  Search,
+  ShieldCheck,
   FileText,
   Terminal,
   Settings,
@@ -11,9 +11,12 @@ import {
   Globe,
   Lock,
   Eye,
-  Clock
+  Clock,
+  Download
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import { getCardThemeByIndex } from "../../components/cardThemes";
 
 const allLogs = [
   { id: "log_001", action: "Tenant Approved", user: "admin@billstack.com", tenant: "Acme Corp", time: "2 hours ago", category: "tenant", severity: "success" },
@@ -43,7 +46,26 @@ const severityConfig: Record<string, { label: string; classes: string }> = {
   error: { label: "Error", classes: "bg-rose-500/10 text-rose-400 border-rose-500/20" },
 };
 
+function exportLogsToCsv(logs: typeof allLogs) {
+  const headers = ["Event", "Category", "Performed By", "Tenant", "Severity", "When"];
+  const rows = logs.map(log => [log.action, log.category, log.user, log.tenant, log.severity, log.time]);
+  const escapeCell = (cell: string) => `"${cell.replace(/"/g, '""')}"`;
+  const csv = [headers, ...rows]
+    .map(row => row.map(escapeCell).join(","))
+    .join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "audit-logs-export.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+}
+
 export function AuditLogs() {
+  const theme = getCardThemeByIndex(0);
   const [activeCategory, setActiveCategory] = useState("all");
   const [search, setSearch] = useState("");
 
@@ -69,11 +91,29 @@ export function AuditLogs() {
             <FileSearch className="w-7 h-7 text-primary" />
             Audit Log Stream
           </h1>
-          <p className="text-muted-foreground text-sm">Chronological record of every system action, access event, and admin operation.</p>
+          <p className="text-muted-foreground text-sm mb-2">Chronological record of every system action, access event, and admin operation.</p>
+          <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-1.5">
+            <Lock className="w-3.5 h-3.5" />
+            <span>Logs are cryptographically hashed and cannot be edited or deleted</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-2">
-          <Clock className="w-4 h-4" />
-          <span>Auto-refreshes every 30s</span>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground bg-white/[0.02] border border-white/[0.06] rounded-xl px-4 py-2">
+            <Clock className="w-4 h-4" />
+            <span>Auto-refreshes every 30s</span>
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              exportLogsToCsv(filtered);
+              toast.success("Audit logs exported", { description: `${filtered.length} log entries exported to CSV.` });
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-white/[0.02] border border-white/[0.06] hover:border-primary/40 rounded-xl text-sm font-semibold text-white transition-all"
+          >
+            <Download className="w-4 h-4" />
+            <span>Export CSV</span>
+          </motion.button>
         </div>
       </div>
 
@@ -106,13 +146,13 @@ export function AuditLogs() {
       </div>
 
       {/* Logs Table */}
-      <motion.div className="relative bg-card border border-violet-500/20 rounded-2xl overflow-hidden">
+      <motion.div className={`relative bg-card border ${theme.border} rounded-2xl overflow-hidden`}>
         {/* Top accent bar */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-violet-500 via-purple-500 to-indigo-500 rounded-t-2xl pointer-events-none z-10" />
+        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${theme.topAccent} rounded-t-2xl pointer-events-none z-10`} />
         {/* Gradient tint */}
-        <div className="absolute inset-0 bg-gradient-to-br from-violet-600/8 via-transparent to-indigo-600/5 pointer-events-none" />
+        <div className={`absolute inset-0 bg-gradient-to-br ${theme.bgGlow} pointer-events-none`} />
         {/* Glow orb */}
-        <div className="absolute -bottom-10 -right-10 w-56 h-56 bg-violet-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className={`absolute -bottom-10 -right-10 w-56 h-56 bg-gradient-to-br ${theme.bgGlow} rounded-full blur-3xl pointer-events-none`} />
         <div className="relative z-10 border-b border-white/[0.04] px-6 py-3 bg-white/[0.01]">
           <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
             {filtered.length} events found
