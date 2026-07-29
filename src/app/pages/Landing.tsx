@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, useInView } from "motion/react";
 import { Link } from "react-router";
 import {
   ArrowRight,
@@ -17,9 +17,70 @@ import {
   Sparkles,
   Lock,
   ChevronDown,
-  Copy
+  Copy,
+  TrendingUp,
+  Users,
+  Activity,
+  Star
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+
+// Animated count-up number, triggers once when scrolled into view
+function CountUp({ value, decimals = 0, suffix = "", prefix = "" }: { value: number; decimals?: number; suffix?: string; prefix?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-80px" });
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    if (!isInView) return;
+    const duration = 1400;
+    const start = performance.now();
+    let frame: number;
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplay(value * eased);
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [isInView, value]);
+
+  return (
+    <span ref={ref} className="tabular-nums">
+      {prefix}{display.toFixed(decimals)}{suffix}
+    </span>
+  );
+}
+
+// Card with a cursor-tracked radial glow, used for the feature bento grid
+function SpotlightCard({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    x.set(e.clientX - rect.left);
+    y.set(e.clientY - rect.top);
+  };
+
+  return (
+    <div
+      onMouseMove={handleMouseMove}
+      className={`relative overflow-hidden ${className}`}
+    >
+      <motion.div
+        className="pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{
+          background: useTransform([x, y], ([latestX, latestY]) =>
+            `radial-gradient(280px circle at ${latestX}px ${latestY}px, rgba(139,92,246,0.18), transparent 70%)`
+          )
+        }}
+      />
+      {children}
+    </div>
+  );
+}
 
 // Mock billing event simulation data
 const billingStylesPreview = {
@@ -89,6 +150,23 @@ export function Landing() {
   });
   const [activeFaq, setActiveFaq] = useState<number | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  // Mouse-reactive hero glow / parallax
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const glowX = useSpring(mouseX, { stiffness: 40, damping: 20 });
+  const glowY = useSpring(mouseY, { stiffness: 40, damping: 20 });
+  const tiltX = useTransform(glowY, [0, 1], [8, -8]);
+  const tiltY = useTransform(glowX, [0, 1], [-8, 8]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX.set(e.clientX / window.innerWidth);
+      mouseY.set(e.clientY / window.innerHeight);
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [mouseX, mouseY]);
 
   // Scroll listener to toggle navbar background
   useEffect(() => {
@@ -161,10 +239,25 @@ export function Landing() {
   return (
     <div className="min-h-screen bg-[#060608] text-foreground selection:bg-primary selection:text-white overflow-hidden relative font-sans">
 
-      {/* Visual background decorations - glowing mesh elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
-      <div className="absolute top-[20%] right-[-10%] w-[45%] h-[45%] rounded-full bg-cyan-500/10 blur-[130px] pointer-events-none" />
-      <div className="absolute bottom-[10%] left-[20%] w-[35%] h-[35%] rounded-full bg-violet-600/10 blur-[120px] pointer-events-none" />
+      {/* Visual background decorations - glowing mesh elements, drifting + mouse-reactive */}
+      <motion.div
+        className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-primary/15 blur-[120px] pointer-events-none"
+        style={{ x: useTransform(glowX, [0, 1], [-40, 40]), y: useTransform(glowY, [0, 1], [-40, 40]) }}
+        animate={{ scale: [1, 1.15, 1] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+      />
+      <motion.div
+        className="absolute top-[20%] right-[-10%] w-[45%] h-[45%] rounded-full bg-cyan-500/15 blur-[130px] pointer-events-none"
+        style={{ x: useTransform(glowX, [0, 1], [30, -30]), y: useTransform(glowY, [0, 1], [30, -30]) }}
+        animate={{ scale: [1, 1.2, 1] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+      />
+      <motion.div
+        className="absolute bottom-[10%] left-[20%] w-[35%] h-[35%] rounded-full bg-violet-600/15 blur-[120px] pointer-events-none"
+        style={{ x: useTransform(glowX, [0, 1], [-20, 20]), y: useTransform(glowY, [0, 1], [20, -20]) }}
+        animate={{ scale: [1, 1.1, 1] }}
+        transition={{ duration: 9, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+      />
 
       {/* Grid Pattern Overlay */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
@@ -197,7 +290,6 @@ export function Landing() {
           >
             <a href="#features" className="hover:text-white transition-colors">Features</a>
             <a href="#simulator" className="hover:text-white transition-colors">Interactive Demo</a>
-            <a href="#developers" className="hover:text-white transition-colors">Developers</a>
             <a href="#faqs" className="hover:text-white transition-colors">FAQ</a>
           </motion.div>
 
@@ -284,6 +376,96 @@ export function Landing() {
                 <span>Access Super Admin</span>
               </motion.button>
             </Link>
+          </motion.div>
+
+          {/* Floating dashboard mockup - tilts with cursor position */}
+          <motion.div
+            initial={{ opacity: 0, y: 60, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            style={{ rotateX: tiltX, rotateY: tiltY, transformPerspective: 1200 }}
+            className="relative w-full max-w-4xl mt-4"
+          >
+            <div className="absolute -inset-8 bg-gradient-to-r from-primary/20 via-cyan-500/10 to-violet-600/20 blur-3xl rounded-full pointer-events-none" />
+            <div className="relative bg-[#0a0a0f]/90 border border-white/[0.08] rounded-3xl shadow-2xl shadow-black/60 overflow-hidden backdrop-blur-sm">
+              <div className="px-5 py-3.5 bg-white/[0.02] border-b border-white/[0.06] flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-rose-500/80" />
+                <div className="w-3 h-3 rounded-full bg-amber-500/80" />
+                <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
+                <span className="text-xs text-muted-foreground font-mono ml-3">app.billstack.dev/dashboard</span>
+              </div>
+              <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  { label: "MRR", value: "₹18.4L", trend: "+12.4%", icon: TrendingUp, color: "text-emerald-400" },
+                  { label: "Active Tenants", value: "1,284", trend: "+38", icon: Users, color: "text-cyan-400" },
+                  { label: "Events / sec", value: "42,918", trend: "live", icon: Activity, color: "text-primary" }
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-white/[0.02] border border-white/[0.05] rounded-2xl p-5 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-muted-foreground uppercase tracking-widest font-semibold">{stat.label}</span>
+                      <stat.icon className={`w-4 h-4 ${stat.color}`} />
+                    </div>
+                    <span className="text-2xl md:text-3xl font-black text-white tracking-tight">{stat.value}</span>
+                    <span className={`text-xs font-semibold ${stat.color}`}>{stat.trend}</span>
+                  </div>
+                ))}
+                <div className="md:col-span-3 h-28 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-end gap-1.5 px-4 pb-4 pt-6 overflow-hidden">
+                  {[40, 55, 48, 62, 58, 72, 65, 80, 74, 88, 82, 95, 90, 100, 96].map((h, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ height: 0 }}
+                      whileInView={{ height: `${h}%` }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.6, delay: i * 0.03 }}
+                      className="flex-1 rounded-t-sm bg-gradient-to-t from-primary/40 to-cyan-400/70"
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Trust / stats strip */}
+      <section className="py-14 px-6 relative z-10 border-y border-white/[0.04] bg-white/[0.01]">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          {[
+            { value: 42, decimals: 0, suffix: "M+", label: "Events ingested / day" },
+            { value: 99.99, decimals: 2, suffix: "%", label: "Platform uptime" },
+            { value: 1200, decimals: 0, suffix: "+", label: "Tenants onboarded" },
+            { value: 18.4, decimals: 1, prefix: "₹", suffix: "L", label: "Avg. MRR tracked" }
+          ].map((stat) => (
+            <div key={stat.label} className="flex flex-col items-center gap-1">
+              <span className="text-3xl md:text-4xl font-black text-white tracking-tight">
+                <CountUp value={stat.value} decimals={stat.decimals} suffix={stat.suffix} prefix={stat.prefix} />
+              </span>
+              <span className="text-xs md:text-sm text-muted-foreground font-medium">{stat.label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Logo marquee - "works with" strip */}
+      <section className="py-10 px-6 relative z-10 overflow-hidden">
+        <p className="text-center text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-6">
+          Integrates with the tools you already use
+        </p>
+        <div className="relative max-w-6xl mx-auto overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+          <motion.div
+            className="flex items-center gap-16 w-max"
+            animate={{ x: ["0%", "-50%"] }}
+            transition={{ duration: 22, repeat: Infinity, ease: "linear" }}
+          >
+            {[...Array(2)].map((_, dupeIdx) => (
+              <div key={dupeIdx} className="flex items-center gap-16">
+                {["Stripe", "Razorpay", "Paddle", "Adyen", "AWS", "Twilio", "Segment", "Slack"].map((name) => (
+                  <span key={name} className="text-xl font-bold text-white/25 hover:text-white/50 transition-colors whitespace-nowrap">
+                    {name}
+                  </span>
+                ))}
+              </div>
+            ))}
           </motion.div>
         </div>
       </section>
@@ -465,6 +647,7 @@ export function Landing() {
               }
             ].map((feature, idx) => {
               const Icon = feature.icon;
+              const isFeatured = idx === 0;
               return (
                 <motion.div
                   key={feature.title}
@@ -472,17 +655,76 @@ export function Landing() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.08 }}
-                  whileHover={{ y: -6, borderColor: "rgba(139, 92, 246, 0.3)" }}
-                  className="p-8 bg-[#09090c] border border-white/[0.05] rounded-3xl hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 flex flex-col gap-4 relative group"
+                  whileHover={{ y: -6 }}
+                  className={`group ${isFeatured ? "md:col-span-2" : ""}`}
                 >
-                  <div className={`w-12 h-12 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center`}>
-                    <Icon className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed font-light">{feature.description}</p>
+                  <SpotlightCard className="h-full p-8 bg-[#09090c] border border-white/[0.05] rounded-3xl hover:border-primary/30 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 flex flex-col gap-4">
+                    <div className={`w-12 h-12 bg-gradient-to-br ${feature.color} rounded-2xl flex items-center justify-center relative z-10`}>
+                      <Icon className="w-5 h-5 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white relative z-10">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed font-light relative z-10">{feature.description}</p>
+                  </SpotlightCard>
                 </motion.div>
               );
             })}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials / social proof */}
+      <section className="py-24 px-6 relative z-10">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-extrabold mb-4">Loved by revenue teams</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Engineering and finance teams trust BillStack to keep billing accurate at scale.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                quote: "We swapped three billing scripts and a cron job for BillStack's usage API. Migrated our entire metered pricing in a week.",
+                name: "Ananya Rao",
+                role: "CTO, Loopwave",
+              },
+              {
+                quote: "The multi-tenant isolation is genuinely airtight. Our compliance audit took a fraction of the time it used to.",
+                name: "Marcus Idris",
+                role: "VP Engineering, Fenwick Cloud",
+              },
+              {
+                quote: "Credits and wallets shipped in a single sprint. Our LLM product now bills per token without any custom ledger code.",
+                name: "Priya Nambiar",
+                role: "Founder, Sparrow AI",
+              }
+            ].map((t, idx) => (
+              <motion.div
+                key={t.name}
+                initial={{ opacity: 0, y: 25 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+                className="p-7 bg-white/[0.02] border border-white/[0.06] rounded-3xl flex flex-col gap-5"
+              >
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-3.5 h-3.5 fill-primary text-primary" />
+                  ))}
+                </div>
+                <p className="text-sm text-white/90 leading-relaxed font-light">"{t.quote}"</p>
+                <div className="flex items-center gap-3 mt-auto pt-2 border-t border-white/[0.05]">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center text-white text-xs font-bold">
+                    {t.name.split(" ").map(n => n[0]).join("")}
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-white">{t.name}</span>
+                    <span className="text-xs text-muted-foreground">{t.role}</span>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
@@ -532,8 +774,13 @@ export function Landing() {
       </section>
 
       {/* CTA Footer Wrapper */}
-      <section className="py-28 px-6 border-t border-white/[0.04] bg-gradient-to-b from-transparent to-[#09090c] relative z-10">
-        <div className="max-w-4xl mx-auto text-center flex flex-col items-center">
+      <section className="py-28 px-6 border-t border-white/[0.04] bg-gradient-to-b from-transparent to-[#09090c] relative z-10 overflow-hidden">
+        <motion.div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] h-[60%] rounded-full bg-primary/15 blur-[140px] pointer-events-none"
+          animate={{ scale: [1, 1.25, 1], opacity: [0.6, 0.9, 0.6] }}
+          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+        />
+        <div className="max-w-4xl mx-auto text-center flex flex-col items-center relative z-10">
           <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
             Deploy revenue infrastructure in minutes.
           </h2>
