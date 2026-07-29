@@ -133,7 +133,7 @@ export function SuperAdminDashboard() {
         />
         <StatCard
           title="Total Users"
-          value="1,248"
+          value="1.2K"
           change="+8%"
           changeType="positive"
           icon={Users}

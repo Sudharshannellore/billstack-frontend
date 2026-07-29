@@ -27,6 +27,7 @@ import {
 } from "recharts";
 import { getCardThemeByIndex } from "../../components/cardThemes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
+import { formatMoney } from "../../components/currency";
 
 const timeRanges = ["Last 7 Days", "Last 30 Days", "Last 12 Months", "All Time"];
 
@@ -142,9 +143,9 @@ export function RevenueAnalytics() {
       {/* Primary KPI row — always visible */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { title: "MRR", value: "₹38,900", change: "+9.1%", isPositive: true, icon: IndianRupee },
-          { title: "ARR", value: "₹4,66,800", change: "+11.4%", isPositive: true, icon: TrendingUp },
-          { title: "Net Income", value: "₹2,26,900", change: "+16.8%", isPositive: true, icon: ArrowUpRight },
+          { title: "MRR", value: formatMoney(38900, "INR", { compact: true }), change: "+9.1%", isPositive: true, icon: IndianRupee },
+          { title: "ARR", value: formatMoney(466800, "INR", { compact: true }), change: "+11.4%", isPositive: true, icon: TrendingUp },
+          { title: "Net Income", value: formatMoney(226900, "INR", { compact: true }), change: "+16.8%", isPositive: true, icon: ArrowUpRight },
           { title: "NRR", value: "108%", change: "+3.2%", isPositive: true, icon: ArrowUpRight },
         ].map((card, idx) => {
           const Icon = card.icon;
@@ -193,13 +194,13 @@ export function RevenueAnalytics() {
           {/* Secondary KPI row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
-              { title: "Total Gross Revenue", value: "₹2,65,000", icon: IndianRupee },
-              { title: "ARPU", value: "₹305", icon: Percent },
-              { title: "Average LTV", value: "₹34,800", icon: Layers },
+              { title: "Total Gross Revenue", value: formatMoney(265000, "INR", { compact: true }), icon: IndianRupee },
+              { title: "ARPU", value: formatMoney(305, "INR"), icon: Percent },
+              { title: "Average LTV", value: formatMoney(34800, "INR", { compact: true }), icon: Layers },
               { title: "LTV:CAC Ratio", value: "4.2x", icon: Layers },
               { title: "Revenue Churn", value: "1.82%", icon: Percent },
-              { title: "Expansion Revenue", value: "₹6,200", icon: ArrowUpRight },
-              { title: "Contraction Revenue", value: "₹1,450", icon: ArrowDownRight },
+              { title: "Expansion Revenue", value: formatMoney(6200, "INR", { compact: true }), icon: ArrowUpRight },
+              { title: "Contraction Revenue", value: formatMoney(1450, "INR", { compact: true }), icon: ArrowDownRight },
             ].map((card, i) => {
               const t = getCardThemeByIndex(i);
               return (
@@ -323,7 +324,7 @@ export function RevenueAnalytics() {
                   </ResponsiveContainer>
                   <div className="absolute flex flex-col items-center justify-center">
                     <span className="text-[10px] text-muted-foreground uppercase font-semibold">Total Share</span>
-                    <span className="text-lg font-extrabold text-white">₹47.5k</span>
+                    <span className="text-lg font-extrabold text-white">{formatMoney(47500, "INR", { compact: true })}</span>
                   </div>
                 </div>
 
@@ -335,7 +336,7 @@ export function RevenueAnalytics() {
                         <span className="text-xs font-medium text-white">{plan.name}</span>
                       </div>
                       <div className="text-right">
-                        <span className="text-xs font-bold text-white block">₹{plan.value.toLocaleString()}</span>
+                        <span className="text-xs font-bold text-white block">{formatMoney(plan.value, "INR", { compact: true })}</span>
                         <span className="text-[9px] text-muted-foreground">{Math.round((plan.value / 47500) * 100)}% share</span>
                       </div>
                     </div>
@@ -416,7 +417,7 @@ export function RevenueAnalytics() {
                         <div className="text-[10px] text-muted-foreground">{c.plan}</div>
                       </div>
                     </div>
-                    <span className="text-sm font-bold text-white">₹{c.revenue.toLocaleString()}</span>
+                    <span className="text-sm font-bold text-white">{formatMoney(c.revenue, "INR", { compact: true })}</span>
                   </div>
                 ))}
               </div>
@@ -430,7 +431,7 @@ export function RevenueAnalytics() {
                   <div key={c.country}>
                     <div className="flex items-center justify-between text-xs mb-1">
                       <span className="text-white font-medium">{c.country}</span>
-                      <span className="text-muted-foreground">₹{c.revenue.toLocaleString()} · {c.pct}%</span>
+                      <span className="text-muted-foreground">{formatMoney(c.revenue, "INR", { compact: true })} · {c.pct}%</span>
                     </div>
                     <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
                       <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary-dark" style={{ width: `${c.pct}%` }} />

@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getCardThemeByIndex } from "../../components/cardThemes";
-import { formatMoney } from "../../components/currency";
+import { formatMoney, formatCompactNumber } from "../../components/currency";
 import { StatusBadge } from "../../components/StatusBadge";
 
 interface BillingRun {
@@ -232,8 +232,8 @@ export function Billing() {
                 <tr key={run.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                   <td className="py-3 px-6 font-mono text-xs text-muted-foreground">{run.id}</td>
                   <td className="py-3 px-6 text-sm">{run.cycle}</td>
-                  <td className="py-3 px-6 text-sm text-muted-foreground">{run.customers.toLocaleString()}</td>
-                  <td className="py-3 px-6 font-medium">{formatMoney(run.totalAmount)}</td>
+                  <td className="py-3 px-6 text-sm text-muted-foreground">{formatCompactNumber(run.customers)}</td>
+                  <td className="py-3 px-6 font-medium">{formatMoney(run.totalAmount, "INR", { compact: true })}</td>
                   <td className="py-3 px-6"><StatusBadge status={run.status} /></td>
                   <td className="py-3 px-6 text-right">
                     <div className="flex items-center justify-end gap-1">
@@ -296,8 +296,8 @@ export function Billing() {
           </DialogHeader>
           {previewRun && (
             <div className="space-y-2 text-sm">
-              <div className="flex justify-between p-2 rounded-lg bg-muted/20"><span className="text-muted-foreground">Customers billed</span><span className="font-medium">{previewRun.customers.toLocaleString()}</span></div>
-              <div className="flex justify-between p-2 rounded-lg bg-muted/20"><span className="text-muted-foreground">Total invoiced</span><span className="font-medium">{formatMoney(previewRun.totalAmount)}</span></div>
+              <div className="flex justify-between p-2 rounded-lg bg-muted/20"><span className="text-muted-foreground">Customers billed</span><span className="font-medium">{formatCompactNumber(previewRun.customers)}</span></div>
+              <div className="flex justify-between p-2 rounded-lg bg-muted/20"><span className="text-muted-foreground">Total invoiced</span><span className="font-medium">{formatMoney(previewRun.totalAmount, "INR", { compact: true })}</span></div>
               <div className="flex justify-between p-2 rounded-lg bg-muted/20"><span className="text-muted-foreground">Run date</span><span className="font-medium">{previewRun.runDate}</span></div>
             </div>
           )}

@@ -5,7 +5,7 @@ import { ArrowLeft, Layers, Users, TrendingUp, DollarSign, Send, Clock, Edit, Pa
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
 import { getCardTheme, getCardThemeByIndex } from "../../components/cardThemes";
-import { formatMoney } from "../../components/currency";
+import { formatMoney, formatCompactNumber } from "../../components/currency";
 import { StatusBadge } from "../../components/StatusBadge";
 import { EmptyState } from "../../components/EmptyState";
 import { productsData } from "./Products";
@@ -53,8 +53,8 @@ export function ProductDetails() {
   };
 
   const stats = [
-    { label: "Monthly Revenue", value: formatMoney(product.monthlyRevenue, product.currency), icon: DollarSign },
-    { label: "Subscribers", value: product.customers.toLocaleString(), icon: Users },
+    { label: "Monthly Revenue", value: formatMoney(product.monthlyRevenue, product.currency, { compact: true }), icon: DollarSign },
+    { label: "Subscribers", value: formatCompactNumber(product.customers), icon: Users },
     { label: "Active Plans", value: product.plans, icon: Layers },
     { label: "Adoption Rate", value: `${product.adoptionRate}%`, icon: TrendingUp },
   ];

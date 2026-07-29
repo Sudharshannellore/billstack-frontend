@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { getCardThemeByIndex } from "../../components/cardThemes";
+import { formatMoney, formatCompactNumber } from "../../components/currency";
 import {
   Dialog,
   DialogContent,
@@ -158,7 +159,7 @@ function parseMrrContribution(price: string, customers: number): string {
     return "Variable";
   }
   const mrr = numeric * customers;
-  return `₹${mrr.toLocaleString("en-IN")}`;
+  return formatMoney(mrr, "INR", { compact: true });
 }
 
 export function Plans() {
@@ -401,7 +402,7 @@ export function Plans() {
                 <td className="py-4 px-6 font-medium">{plan.price}</td>
                 <td className="py-4 px-6 text-muted-foreground">
                   <div className="flex items-center gap-1.5">
-                    <span>{plan.customers}</span>
+                    <span>{formatCompactNumber(plan.customers)}</span>
                     {plan.customerTrend >= 0 ? (
                       <span className="flex items-center gap-0.5 text-[11px] font-medium text-success">
                         <TrendingUp className="w-3 h-3" />

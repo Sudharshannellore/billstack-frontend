@@ -3,6 +3,7 @@ import { Key, Plus, Copy, RotateCw, Trash2, ShieldAlert, BarChart3, Globe, Gauge
 import { useState } from "react";
 import { toast } from "sonner";
 import { getCardThemeByIndex } from "../../components/cardThemes";
+import { formatCompactNumber } from "../../components/currency";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -329,7 +330,7 @@ export function APIKeys() {
                 <div className="flex items-center gap-1.5"><Globe className="w-3.5 h-3.5" />{keyRecord.ipWhitelist}</div>
                 <div className="flex items-center gap-1.5"><Gauge className="w-3.5 h-3.5" />{keyRecord.rateLimit} req/min</div>
                 <div className="flex items-center gap-1.5"><CalendarClock className="w-3.5 h-3.5" />Expires {keyRecord.expiresAt}</div>
-                <div className="flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5" />{keyRecord.requestsThisMonth.toLocaleString()} reqs/mo</div>
+                <div className="flex items-center gap-1.5"><BarChart3 className="w-3.5 h-3.5" />{formatCompactNumber(keyRecord.requestsThisMonth)} reqs/mo</div>
               </div>
 
               <div className="relative z-10 text-sm text-muted-foreground mt-3">
@@ -508,7 +509,7 @@ export function APIKeys() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="p-3 rounded-lg bg-muted/20 border border-border">
                   <div className="text-xs text-muted-foreground mb-1">Requests this month</div>
-                  <div className="text-lg font-bold">{analyticsTarget.requestsThisMonth.toLocaleString()}</div>
+                  <div className="text-lg font-bold">{formatCompactNumber(analyticsTarget.requestsThisMonth)}</div>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/20 border border-border">
                   <div className="text-xs text-muted-foreground mb-1">Last Used</div>

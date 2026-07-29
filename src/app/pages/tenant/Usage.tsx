@@ -137,8 +137,8 @@ export function Usage() {
           title: "API Gateway Requests",
           color: THEME_HEX[0],
           gradient: "from-primary/20 to-primary/0",
-          total: "1,53,500 units",
-          quota: "10,00,000 max quota"
+          total: "1.53L units",
+          quota: "10L max quota"
         };
       case "storage":
         return {

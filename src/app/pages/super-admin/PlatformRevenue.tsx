@@ -13,6 +13,7 @@ import {
 import { useState } from "react";
 import { StatCard } from "../../components/StatCard";
 import { getCardThemeByIndex } from "../../components/cardThemes";
+import { formatMoney } from "../../components/currency";
 
 const revenueData = [
   { month: "Oct", platform: 42000, commission: 4200 },
@@ -62,7 +63,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
           <div key={entry.dataKey} className="flex items-center gap-2 mb-0.5">
             <span className="w-2 h-2 rounded-full" style={{ background: entry.color }} />
             <span className="text-white font-bold capitalize">{entry.dataKey}:</span>
-            <span className="text-muted-foreground">₹{entry.value.toLocaleString()}</span>
+            <span className="text-muted-foreground">{formatMoney(entry.value, "INR", { compact: true })}</span>
           </div>
         ))}
       </div>
@@ -189,7 +190,7 @@ export function PlatformRevenue() {
                 <div key={t.name}>
                   <div className="flex items-center justify-between mb-1.5 text-xs">
                     <span className="font-semibold text-white">{t.name}</span>
-                    <span className="text-muted-foreground font-mono">₹{t.revenue.toLocaleString()}</span>
+                    <span className="text-muted-foreground font-mono">{formatMoney(t.revenue, "INR", { compact: true })}</span>
                   </div>
                   <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
                     <motion.div

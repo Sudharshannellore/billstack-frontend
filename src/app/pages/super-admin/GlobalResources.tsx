@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { getCardTheme } from "../../components/cardThemes";
+import { formatCompactNumber } from "../../components/currency";
 
 const resources = [
   { 
@@ -178,7 +179,7 @@ export function GlobalResources() {
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider block mb-0.5">Usage This Month</span>
-                  <span className="text-sm font-black text-white">{resource.usageThisMonth.toLocaleString()}</span>
+                  <span className="text-sm font-black text-white">{formatCompactNumber(resource.usageThisMonth)}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">

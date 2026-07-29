@@ -1,5 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { ChevronLeft, ChevronRight, ChevronUp, ChevronDown, Search } from "lucide-react";
 import { getCardThemeByIndex, type CardTheme } from "./cardThemes";
 import { EmptyState, type EmptyStateProps } from "./EmptyState";
@@ -37,6 +37,8 @@ export interface DataTableProps<T> {
   /** Extra toolbar content rendered next to the search input (e.g. status filter dropdowns). */
   toolbar?: ReactNode;
   rowClassName?: (row: T) => string;
+  /** When set, rows show a chevron and clicking one expands an inline detail panel below it (see Invoices.tsx for the pattern this generalizes). */
+  renderExpanded?: (row: T, index: number) => ReactNode;
 }
 
 /**
@@ -64,12 +66,14 @@ export function DataTable<T>({
   emptyState,
   toolbar,
   rowClassName,
+  renderExpanded,
 }: DataTableProps<T>) {
   const resolvedTheme = theme ?? getCardThemeByIndex(themeIndex);
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
+  const [expandedId, setExpandedId] = useState<string | number | null>(null);
 
   const filtered = useMemo(() => {
     if (!searchable || !query.trim() || !searchKeys) return data;
@@ -160,6 +164,7 @@ export function DataTable<T>({
           <table className="w-full">
             <thead className="bg-white/[0.01] border-b border-white/[0.04]">
               <tr>
+                {renderExpanded && <th className="py-4 px-6 w-8"></th>}
                 {selectable && (
                   <th className="py-4 px-6 w-10">
                     <input
@@ -200,38 +205,62 @@ export function DataTable<T>({
               ) : error ? null : paged.length === 0 ? null : (
                 paged.map((row, index) => {
                   const id = getRowId(row);
+                  const isExpanded = renderExpanded ? expandedId === id : false;
                   return (
-                    <motion.tr
-                      key={id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      onClick={() => onRowClick?.(row)}
-                      className={`border-b border-border hover:bg-muted/30 transition-colors group ${
-                        onRowClick ? "cursor-pointer" : ""
-                      } ${rowClassName?.(row) ?? ""}`}
-                    >
-                      {selectable && (
-                        <td className="py-4 px-6" onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.includes(id)}
-                            onChange={() => toggleRow(id)}
-                            className="rounded border-border accent-[var(--color-primary)]"
-                          />
-                        </td>
-                      )}
-                      {columns.map((col) => (
-                        <td
-                          key={col.key}
-                          className={`py-4 px-6 ${
-                            col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : ""
-                          } ${col.className ?? ""}`}
-                        >
-                          {col.render(row, index)}
-                        </td>
-                      ))}
-                    </motion.tr>
+                    <>
+                      <motion.tr
+                        key={id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        onClick={() => {
+                          if (renderExpanded) setExpandedId(isExpanded ? null : id);
+                          onRowClick?.(row);
+                        }}
+                        className={`border-b border-border hover:bg-muted/30 transition-colors group ${
+                          onRowClick || renderExpanded ? "cursor-pointer" : ""
+                        } ${rowClassName?.(row) ?? ""}`}
+                      >
+                        {renderExpanded && (
+                          <td className="py-4 px-6">
+                            {isExpanded ? (
+                              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                            )}
+                          </td>
+                        )}
+                        {selectable && (
+                          <td className="py-4 px-6" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(id)}
+                              onChange={() => toggleRow(id)}
+                              className="rounded border-border accent-[var(--color-primary)]"
+                            />
+                          </td>
+                        )}
+                        {columns.map((col) => (
+                          <td
+                            key={col.key}
+                            className={`py-4 px-6 ${
+                              col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : ""
+                            } ${col.className ?? ""}`}
+                          >
+                            {col.render(row, index)}
+                          </td>
+                        ))}
+                      </motion.tr>
+                      <AnimatePresence key={`${id}-expanded`}>
+                        {renderExpanded && isExpanded && (
+                          <motion.tr initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="border-b border-border bg-muted/10">
+                            <td colSpan={columns.length + (selectable ? 1 : 0) + 1} className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                              {renderExpanded(row, index)}
+                            </td>
+                          </motion.tr>
+                        )}
+                      </AnimatePresence>
+                    </>
                   );
                 })
               )}

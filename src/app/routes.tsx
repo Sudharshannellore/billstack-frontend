@@ -18,6 +18,7 @@ import {
   Monitoring,
   AuditLogs,
   SuperAdminSettings,
+  PaymentGateways as SuperAdminPaymentGateways,
 } from "./pages/super-admin";
 
 import {
@@ -36,7 +37,6 @@ import {
   AddSubscriptionTopup,
   Usage,
   Billing,
-  Invoices,
   Notifications,
   AIAssistant,
   Coupons,
@@ -51,6 +51,7 @@ import {
   TenantProfile,
   Wallet,
   Webhooks,
+  PaymentGateways as TenantPaymentGateways,
 } from "./pages/tenant";
 
 export const router = createBrowserRouter([
@@ -77,6 +78,7 @@ export const router = createBrowserRouter([
       { path: "resources/create", Component: CreateResource },
       { path: "templates", Component: PlanTemplates },
       { path: "templates/create", Component: CreateTemplate },
+      { path: "payment-gateways", Component: SuperAdminPaymentGateways },
       { path: "revenue", Component: PlatformRevenue },
       { path: "monitoring", Component: Monitoring },
       { path: "audit-logs", Component: AuditLogs },
@@ -104,11 +106,11 @@ export const router = createBrowserRouter([
       { path: "coupons/create", Component: CreateCoupon },
       { path: "topups", Component: Topups },
       { path: "topups/create", Component: CreateTopup },
+      { path: "payment-gateways", Component: TenantPaymentGateways },
       { path: "wallet", Component: Wallet },
       { path: "usage", Component: Usage },
       { path: "billing", Component: Billing },
       { path: "webhooks", Component: Webhooks },
-      { path: "invoices", Component: Invoices },
       { path: "notifications", Component: Notifications },
       { path: "ai-assistant", Component: AIAssistant },
       { path: "api-keys", Component: APIKeys },

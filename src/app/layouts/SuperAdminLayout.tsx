@@ -9,6 +9,7 @@ import {
   Activity,
   FileSearch,
   Settings,
+  CreditCard,
 } from "lucide-react";
 
 const navItems: NavItem[] = [
@@ -16,6 +17,7 @@ const navItems: NavItem[] = [
   { label: "Tenants", path: "/super-admin/tenants", icon: Building2, badge: "3" },
   { label: "Global Resources", path: "/super-admin/resources", icon: Database },
   { label: "Plan Templates", path: "/super-admin/templates", icon: FileText },
+  { label: "Payment Gateways", path: "/super-admin/payment-gateways", icon: CreditCard },
   { label: "Revenue", path: "/super-admin/revenue", icon: DollarSign },
   { label: "Monitoring", path: "/super-admin/monitoring", icon: Activity },
   { label: "Audit Logs", path: "/super-admin/audit-logs", icon: FileSearch },

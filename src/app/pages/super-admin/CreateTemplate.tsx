@@ -190,7 +190,7 @@ export function CreateTemplate({ onSuccess, onCancel }: CreateTemplateProps) {
                 <FormItem>
                   <FormLabel className="text-sm font-semibold">Price Statement</FormLabel>
                   <FormControl>
-                    <Input placeholder="E.g. $49/mo, $0.05/call, Negotiated" className="h-11" {...field} />
+                    <Input placeholder="E.g. ₹49/mo, ₹0.05/call, Negotiated" className="h-11" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

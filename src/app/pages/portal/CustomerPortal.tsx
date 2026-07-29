@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { getCardThemeByIndex, getCardTheme } from "../../components/cardThemes";
-import { formatMoney, getCurrencySymbol } from "../../components/currency";
+import { formatMoney, getCurrencySymbol, formatCompactNumber } from "../../components/currency";
 import {
   Dialog,
   DialogContent,
@@ -250,7 +250,7 @@ export function CustomerPortal() {
             </div>
             <div className="flex items-center justify-between text-sm mb-2">
               <span className="text-muted-foreground">
-                {mockUsage.used.toLocaleString("en-IN")} / {mockUsage.quota.toLocaleString("en-IN")} calls
+                {formatCompactNumber(mockUsage.used)} / {formatCompactNumber(mockUsage.quota)} calls
               </span>
               <span className="font-medium">{usagePercent}%</span>
             </div>

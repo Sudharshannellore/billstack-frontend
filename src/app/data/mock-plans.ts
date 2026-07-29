@@ -31,7 +31,7 @@ export const MOCK_PRODUCTS: Product[] = [
     id: "prod_2",
     name: "Analytics Platform",
     billingStyle: "usage",
-    currency: "USD",
+    currency: "INR",
     plans: [
       { id: "plan_2_1", name: "Pay as you go", billingStyle: "usage", price: "₹0.05/query" },
       { id: "plan_2_2", name: "Developer Pack", billingStyle: "credits", price: "₹50 for 1000 credits" },

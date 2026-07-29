@@ -158,12 +158,12 @@ export function CreateResource({ onSuccess, onCancel }: CreateResourceProps) {
               rules={{ required: "Price definition is required" }}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-bold italic">Unit Price (USD)</FormLabel>
+                  <FormLabel className="text-sm font-bold italic">Unit Price (INR)</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">$</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-bold">₹</span>
                       <Input
-                        placeholder="E.g. 0.05 (for $0.05/unit)"
+                        placeholder="E.g. 0.05 (for ₹0.05/unit)"
                         className="pl-8 h-12"
                         {...field}
                       />

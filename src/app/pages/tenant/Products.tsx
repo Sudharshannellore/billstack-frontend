@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "motion/react";
+﻿import { motion, AnimatePresence } from "motion/react";
 import { Plus, MoreVertical, Edit, Trash2, Layers, Copy, TrendingUp, TrendingDown, Archive, ArchiveRestore, FileEdit, CheckCircle2, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
@@ -65,7 +65,7 @@ export const productsData: ProductRecord[] = [
     version: 5,
     plans: 4,
     customers: 128,
-    currency: "USD",
+    currency: "INR",
     monthlyRevenue: 9840,
     growthPercent: 6.1,
     adoptionRate: 54,
@@ -99,7 +99,7 @@ export const productsData: ProductRecord[] = [
     version: 4,
     plans: 3,
     customers: 172,
-    currency: "USD",
+    currency: "INR",
     monthlyRevenue: 15620,
     growthPercent: 9.2,
     adoptionRate: 66,
@@ -116,7 +116,7 @@ export const productsData: ProductRecord[] = [
     version: 1,
     plans: 4,
     customers: 61,
-    currency: "USD",
+    currency: "INR",
     monthlyRevenue: 21300,
     growthPercent: 24.7,
     adoptionRate: 33,
@@ -133,7 +133,7 @@ export const productsData: ProductRecord[] = [
     version: 2,
     plans: 3,
     customers: 47,
-    currency: "USD",
+    currency: "INR",
     monthlyRevenue: 7420,
     growthPercent: -1.5,
     adoptionRate: 22,
@@ -167,7 +167,7 @@ export const productsData: ProductRecord[] = [
     version: 1,
     plans: 2,
     customers: 15,
-    currency: "USD",
+    currency: "INR",
     monthlyRevenue: 980,
     growthPercent: -8.6,
     adoptionRate: 9,
@@ -184,7 +184,7 @@ export const productsData: ProductRecord[] = [
     version: 6,
     plans: 3,
     customers: 54,
-    currency: "USD",
+    currency: "INR",
     monthlyRevenue: 11250,
     growthPercent: 2.9,
     adoptionRate: 46,
@@ -338,7 +338,7 @@ export function Products() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search products, tags…"
+            placeholder="Search products, tagsâ€¦"
             className="w-full pl-9 pr-3 py-2 bg-input-background border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none transition-[color,box-shadow]"
           />
         </div>

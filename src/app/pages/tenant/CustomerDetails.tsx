@@ -11,13 +11,13 @@ import { initialCustomers, SEGMENT_LABELS } from "./Customers";
 import type { Note, TimelineEvent } from "../../types/common";
 
 const mockSubscriptions = [
-  { id: "sub_1", plan: "Pro", status: "active", mrr: "$99", nextBilling: "Apr 15, 2026" },
+  { id: "sub_1", plan: "Pro", status: "active", mrr: "₹99", nextBilling: "Apr 15, 2026" },
 ];
 
 const mockInvoices = [
-  { id: "inv_2031", amount: "$99.00", status: "paid", date: "Mar 15, 2026" },
-  { id: "inv_2019", amount: "$99.00", status: "paid", date: "Feb 15, 2026" },
-  { id: "inv_2005", amount: "$99.00", status: "overdue", date: "Jan 15, 2026" },
+  { id: "inv_2031", amount: "₹99.00", status: "paid", date: "Mar 15, 2026" },
+  { id: "inv_2019", amount: "₹99.00", status: "paid", date: "Feb 15, 2026" },
+  { id: "inv_2005", amount: "₹99.00", status: "overdue", date: "Jan 15, 2026" },
 ];
 
 const mockWalletTx = [
@@ -31,8 +31,8 @@ const mockUsage = [
 ];
 
 const mockPayments = [
-  { id: "p1", method: "Visa •••• 4242", amount: "$99.00", date: "Mar 15, 2026", status: "success" },
-  { id: "p2", method: "Visa •••• 4242", amount: "$99.00", date: "Jan 15, 2026", status: "failed" },
+  { id: "p1", method: "Visa •••• 4242", amount: "₹99.00", date: "Mar 15, 2026", status: "success" },
+  { id: "p2", method: "Visa •••• 4242", amount: "₹99.00", date: "Jan 15, 2026", status: "failed" },
 ];
 
 const mockTimeline: TimelineEvent[] = [

@@ -181,7 +181,7 @@ export function Wallet() {
         className="p-8 bg-gradient-to-br from-primary/10 to-primary-dark/10 border border-primary/20 rounded-xl"
       >
         <div className="text-sm text-muted-foreground mb-2">Total Balance</div>
-        <div className="text-5xl font-bold mb-4">{formatMoney(totalBalance, "INR")}</div>
+        <div className="text-5xl font-bold mb-4">{formatMoney(totalBalance, "INR", { compact: true })}</div>
         <div className="text-sm text-muted-foreground">Across {balances.length} customer wallets</div>
       </motion.div>
 
@@ -203,7 +203,7 @@ export function Wallet() {
                 <stat.icon className={`w-3.5 h-3.5 ${t.iconColor}`} />
                 <span className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">{stat.label}</span>
               </div>
-              <div className="text-lg font-black text-white">{formatMoney(ledgerTotals[stat.key], "INR")}</div>
+              <div className="text-lg font-black text-white">{formatMoney(ledgerTotals[stat.key], "INR", { compact: true })}</div>
             </div>
           );
         })}

@@ -24,6 +24,7 @@ import {
   Star
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { formatCompactNumber } from "../components/currency";
 
 // Animated count-up number, triggers once when scrolled into view
 function CountUp({ value, decimals = 0, suffix = "", prefix = "" }: { value: number; decimals?: number; suffix?: string; prefix?: string }) {
@@ -210,9 +211,9 @@ export function Landing() {
 
   const formatMetric = (style: keyof typeof billingStylesPreview) => {
     const val = simulatedMetrics[style];
-    if (style === "subscription") return `₹${val.toLocaleString()}/mo`;
-    if (style === "usage") return `${val.toLocaleString()} events`;
-    if (style === "credits") return `${val.toLocaleString()} Credits`;
+    if (style === "subscription") return `₹${formatCompactNumber(val)}/mo`;
+    if (style === "usage") return `${formatCompactNumber(val)} events`;
+    if (style === "credits") return `${formatCompactNumber(val)} Credits`;
     if (style === "telecom") return `${val} GB / 50 GB`;
     return String(val);
   };

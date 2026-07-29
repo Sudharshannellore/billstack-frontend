@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 import { getCardThemeByIndex } from "../../components/cardThemes";
+import { formatCompactNumber } from "../../components/currency";
 import {
   Dialog,
   DialogContent,
@@ -302,7 +303,7 @@ export function TenantManagement() {
                             <span className="text-xs font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-lg">{tenant.plan}</span>
                           </td>
                           <td className="py-4 px-4 text-sm font-bold text-white">{tenant.revenue}</td>
-                          <td className="py-4 px-4 text-sm text-muted-foreground">{tenant.users.toLocaleString()}</td>
+                          <td className="py-4 px-4 text-sm text-muted-foreground">{formatCompactNumber(tenant.users)}</td>
                           <td className="py-4 px-4">
                             <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">{tenant.growth}</span>
                           </td>

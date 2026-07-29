@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { StatCard } from "../../components/StatCard";
 import { getCardThemeByIndex } from "../../components/cardThemes";
+import { formatMoney } from "../../components/currency";
 import {
   IndianRupee,
   Users,
@@ -261,7 +262,7 @@ export function TenantDashboard() {
       title: "Wallet",
       render: () => (
         <div className="space-y-2 text-sm">
-          <div className="flex items-center gap-2 text-2xl font-black text-white"><WalletIcon className="w-5 h-5 text-primary" />₹19,270</div>
+          <div className="flex items-center gap-2 text-2xl font-black text-white"><WalletIcon className="w-5 h-5 text-primary" />{formatMoney(19270, "INR", { compact: true })}</div>
           <p className="text-xs text-muted-foreground">Total balance across 6 customer wallets</p>
           <Link to="/tenant/wallet" className="text-xs text-primary font-bold hover:underline">Manage wallet →</Link>
         </div>
@@ -274,7 +275,7 @@ export function TenantDashboard() {
         <div className="space-y-2 text-sm">
           <div className="flex items-center gap-2 text-2xl font-black text-white"><FileText className="w-5 h-5 text-primary" />3 overdue</div>
           <p className="text-xs text-muted-foreground">₹499 total overdue across 1 invoice</p>
-          <Link to="/tenant/invoices" className="text-xs text-primary font-bold hover:underline">Review invoices →</Link>
+          <Link to="/tenant/billing" className="text-xs text-primary font-bold hover:underline">Review invoices →</Link>
         </div>
       ),
     },
@@ -365,8 +366,8 @@ export function TenantDashboard() {
 
       {/* Primary Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard title="Monthly Revenue" value="₹34,680" change="+18%" changeType="positive" icon={IndianRupee} delay={0} colorIndex={0} />
-        <StatCard title="Active Customers" value="1,284" change="+12%" changeType="positive" icon={Users} delay={0.1} colorIndex={1} />
+        <StatCard title="Monthly Revenue" value={formatMoney(34680, "INR", { compact: true })} change="+18%" changeType="positive" icon={IndianRupee} delay={0} colorIndex={0} />
+        <StatCard title="Active Customers" value="1.28K" change="+12%" changeType="positive" icon={Users} delay={0.1} colorIndex={1} />
         <StatCard title="Active Subscriptions" value="892" change="+8%" changeType="positive" icon={Repeat} delay={0.2} colorIndex={2} />
         <StatCard title="API Events Ingested" value="2.4M" change="+32%" changeType="positive" icon={Activity} delay={0.3} colorIndex={5} />
       </div>
