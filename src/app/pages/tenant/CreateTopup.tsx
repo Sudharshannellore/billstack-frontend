@@ -119,11 +119,11 @@ export function CreateTopup({ onSuccess, onCancel }: CreateTopupProps) {
   const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, TOPUP_STEPS.length - 1));
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 0));
 
+  const stepValues = form.watch();
   const isStepValid = () => {
-    const values = form.getValues();
     switch (currentStep) {
-      case 0: return !!values.productId && !!values.planId;
-      case 1: return !!values.name && !!values.value && !!values.price;
+      case 0: return !!stepValues.productId && !!stepValues.planId;
+      case 1: return !!stepValues.name && !!stepValues.value && !!stepValues.price;
       default: return false;
     }
   };

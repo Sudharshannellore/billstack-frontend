@@ -5,17 +5,14 @@ import {
   Bell,
   Webhook,
   Percent,
-  Users,
   Save,
   ChevronRight,
   Globe,
   Mail,
-  UserPlus,
   Copy,
   KeyRound,
   DatabaseBackup,
   RefreshCw,
-  Trash2,
   Flag,
   Palette,
   MapPin,
@@ -26,76 +23,24 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { getCardThemeByIndex } from "../../components/cardThemes";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogTrigger,
-} from "../../components/ui/dialog";
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableHead,
-  TableRow,
-  TableCell,
-} from "../../components/ui/table";
 import { Switch } from "../../components/ui/switch";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
 
 const tabs = [
   { id: "general", label: "General", icon: SettingsIcon },
   { id: "security", label: "Security", icon: ShieldCheck },
-  { id: "team", label: "Team", icon: Users },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "webhooks", label: "Webhooks", icon: Webhook },
   { id: "data", label: "Data & Backup", icon: DatabaseBackup },
   { id: "platform", label: "Platform", icon: Flag },
 ];
-
-type MemberRole = "Owner" | "Admin" | "Billing" | "Read-only";
-
-interface TeamMember {
-  id: number;
-  name: string;
-  email: string;
-  role: MemberRole;
-  lastActive: string;
-  pending?: boolean;
-}
-
-const initialTeam: TeamMember[] = [
-  { id: 1, name: "Priya Sharma", email: "priya@billstack.com", role: "Owner", lastActive: "Just now" },
-  { id: 2, name: "Marcus Lee", email: "marcus@billstack.com", role: "Admin", lastActive: "2 hours ago" },
-  { id: 3, name: "Elena Ortiz", email: "elena@billstack.com", role: "Billing", lastActive: "1 day ago" },
-  { id: 4, name: "Sam Whitfield", email: "sam@billstack.com", role: "Read-only", lastActive: "5 days ago" },
-];
-
-function Toggle({ enabled, onChange }: { enabled: boolean; onChange: () => void }) {
-  return (
-    <button
-      onClick={onChange}
-      className={`relative w-11 h-6 rounded-full transition-colors duration-300 ${enabled ? "bg-primary" : "bg-white/10"}`}
-    >
-      <motion.span
-        animate={{ x: enabled ? 20 : 2 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        className="absolute top-1 w-4 h-4 bg-white rounded-full shadow"
-      />
-    </button>
-  );
-}
 
 export function SuperAdminSettings() {
   const sidebarTheme = getCardThemeByIndex(1);
@@ -112,12 +57,6 @@ export function SuperAdminSettings() {
   });
   const [commission, setCommission] = useState("10");
   const [trialDays, setTrialDays] = useState("14");
-
-  // Team / RBAC state
-  const [team, setTeam] = useState<TeamMember[]>(initialTeam);
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<MemberRole>("Read-only");
 
   // SSO state
   const [ssoEnforced, setSsoEnforced] = useState(false);
@@ -172,36 +111,6 @@ export function SuperAdminSettings() {
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
-  };
-
-  const handleInvite = () => {
-    if (!inviteEmail.trim()) return;
-    const newMember: TeamMember = {
-      id: Date.now(),
-      name: inviteEmail.split("@")[0],
-      email: inviteEmail.trim(),
-      role: inviteRole,
-      lastActive: "Never",
-      pending: true,
-    };
-    setTeam(prev => [...prev, newMember]);
-    setInviteOpen(false);
-    setInviteEmail("");
-    setInviteRole("Read-only");
-    toast.success(`Invite sent to ${newMember.email}`);
-  };
-
-  const handleRoleChange = (id: number, role: MemberRole) => {
-    setTeam(prev => prev.map(m => (m.id === id ? { ...m, role } : m)));
-    toast.success("Role updated");
-  };
-
-  const handleRemoveMember = (id: number) => {
-    const member = team.find(m => m.id === id);
-    if (!member || member.role === "Owner") return;
-    if (!window.confirm(`Remove ${member.name} from the team?`)) return;
-    setTeam(prev => prev.filter(m => m.id !== id));
-    toast.success(`${member.name} removed from team`);
   };
 
   const handleSsoToggle = () => {
@@ -332,9 +241,9 @@ export function SuperAdminSettings() {
                       <div className="text-xs font-bold text-white">{item.label}</div>
                       <div className="text-xs text-muted-foreground mt-0.5">{item.desc}</div>
                     </div>
-                    <Toggle
-                      enabled={toggles[item.key as keyof typeof toggles]}
-                      onChange={() => toggle(item.key as keyof typeof toggles)}
+                    <Switch
+                      checked={toggles[item.key as keyof typeof toggles]}
+                      onCheckedChange={() => toggle(item.key as keyof typeof toggles)}
                     />
                   </div>
                 ))}
@@ -348,28 +257,6 @@ export function SuperAdminSettings() {
                 <h2 className="text-base font-bold text-white mb-1">Security Policies</h2>
                 <p className="text-xs text-muted-foreground">Authentication and access control settings.</p>
               </div>
-              {[
-                { label: "Session Timeout (minutes)", defaultValue: "60" },
-                { label: "Max Failed Login Attempts", defaultValue: "5" },
-                { label: "Minimum Password Length", defaultValue: "12" },
-              ].map(field => (
-                <div key={field.label} className="p-4 bg-white/[0.01] border border-white/[0.04] rounded-xl">
-                  <label className="block text-xs font-bold text-white mb-2">{field.label}</label>
-                  <input
-                    type="number"
-                    defaultValue={field.defaultValue}
-                    className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.08] focus:border-primary/50 rounded-xl text-sm text-white focus:outline-none transition-all"
-                  />
-                </div>
-              ))}
-              <div className="p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl">
-                <div className="flex items-center gap-2 text-amber-400 font-bold text-xs mb-1">
-                  <ShieldCheck className="w-4 h-4" /> Two-Factor Authentication
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">Enforce 2FA for all admin accounts. This will require all admins to re-authenticate.</p>
-                <Toggle enabled={true} onChange={() => {}} />
-              </div>
-
               <div className="p-4 bg-white/[0.01] border border-white/[0.04] rounded-xl space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-white font-bold text-xs">
@@ -391,117 +278,6 @@ export function SuperAdminSettings() {
                     </Button>
                   </div>
                 </div>
-              </div>
-            </motion.div>
-          )}
-
-          {activeTab === "team" && (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-base font-bold text-white mb-1">Team Members</h2>
-                  <p className="text-xs text-muted-foreground">Manage platform admin access and roles.</p>
-                </div>
-                <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" className="gap-2">
-                      <UserPlus className="w-4 h-4" /> Invite Member
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Invite Team Member</DialogTitle>
-                      <DialogDescription>Send an invitation to join the platform admin team.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="invite-email">Email</Label>
-                        <Input
-                          id="invite-email"
-                          type="email"
-                          placeholder="name@company.com"
-                          value={inviteEmail}
-                          onChange={e => setInviteEmail(e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Role</Label>
-                        <Select value={inviteRole} onValueChange={v => setInviteRole(v as MemberRole)}>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Select a role" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Admin">Admin</SelectItem>
-                            <SelectItem value="Billing">Billing</SelectItem>
-                            <SelectItem value="Read-only">Read-only</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setInviteOpen(false)}>Cancel</Button>
-                      <Button onClick={handleInvite} disabled={!inviteEmail.trim()}>Send Invite</Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              <div className="border border-white/[0.06] rounded-xl overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent border-white/[0.06]">
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Last Active</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {team.map(member => (
-                      <TableRow key={member.id} className="border-white/[0.06]">
-                        <TableCell className="font-semibold text-white">
-                          {member.name}
-                          {member.pending && (
-                            <span className="ml-2 text-[10px] font-bold uppercase tracking-wide text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-2 py-0.5">
-                              Pending
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{member.email}</TableCell>
-                        <TableCell>
-                          <Select
-                            value={member.role}
-                            onValueChange={v => handleRoleChange(member.id, v as MemberRole)}
-                            disabled={member.role === "Owner"}
-                          >
-                            <SelectTrigger size="sm" className="w-32">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Owner">Owner</SelectItem>
-                              <SelectItem value="Admin">Admin</SelectItem>
-                              <SelectItem value="Billing">Billing</SelectItem>
-                              <SelectItem value="Read-only">Read-only</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{member.lastActive}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10 gap-1.5"
-                            disabled={member.role === "Owner"}
-                            onClick={() => handleRemoveMember(member.id)}
-                          >
-                            <Trash2 className="w-3.5 h-3.5" /> Remove
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
               </div>
             </motion.div>
           )}
@@ -532,9 +308,9 @@ export function SuperAdminSettings() {
                     <div className="text-xs font-bold text-white">{item.label}</div>
                     <div className="text-xs text-muted-foreground mt-0.5">{item.desc}</div>
                   </div>
-                  <Toggle
-                    enabled={toggles[item.key as keyof typeof toggles]}
-                    onChange={() => toggle(item.key as keyof typeof toggles)}
+                  <Switch
+                    checked={toggles[item.key as keyof typeof toggles]}
+                    onCheckedChange={() => toggle(item.key as keyof typeof toggles)}
                   />
                 </div>
               ))}
@@ -563,7 +339,7 @@ export function SuperAdminSettings() {
                   <div className="text-xs font-bold text-white">Enable Webhooks</div>
                   <div className="text-xs text-muted-foreground">Deliver real-time platform events to the configured endpoint.</div>
                 </div>
-                <Toggle enabled={toggles.webhooks} onChange={() => toggle("webhooks")} />
+                <Switch checked={toggles.webhooks} onCheckedChange={() => toggle("webhooks")} />
               </div>
               <div className="p-4 bg-white/[0.01] border border-white/[0.04] rounded-xl">
                 <label className="block text-xs font-bold text-white mb-2">Signing Secret</label>
@@ -633,7 +409,7 @@ export function SuperAdminSettings() {
                 {Object.entries(featureFlags).map(([key, value]) => (
                   <div key={key} className="flex items-center justify-between py-1.5">
                     <span className="text-xs text-muted-foreground capitalize">{key.replace(/([A-Z])/g, " $1")}</span>
-                    <Toggle enabled={value} onChange={() => toggleFeatureFlag(key as keyof typeof featureFlags)} />
+                    <Switch checked={value} onCheckedChange={() => toggleFeatureFlag(key as keyof typeof featureFlags)} />
                   </div>
                 ))}
               </div>
@@ -668,7 +444,7 @@ export function SuperAdminSettings() {
                 {Object.entries(regions).map(([region, enabled]) => (
                   <div key={region} className="flex items-center justify-between py-1.5">
                     <span className="text-xs text-muted-foreground">{region}</span>
-                    <Toggle enabled={enabled} onChange={() => toggleRegion(region as keyof typeof regions)} />
+                    <Switch checked={enabled} onCheckedChange={() => toggleRegion(region as keyof typeof regions)} />
                   </div>
                 ))}
               </div>

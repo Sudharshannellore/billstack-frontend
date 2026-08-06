@@ -1,9 +1,12 @@
 import { motion, AnimatePresence } from "motion/react";
-import { Plus, Users, Mail, MoreVertical, Edit, Trash2, Clock, IndianRupee, CheckCircle, Download, MessageSquare, Eye } from "lucide-react";
+import { Plus, Users, Mail, MoreVertical, Edit, Trash2, IndianRupee, CheckCircle, Clock, Download, MessageSquare, Eye } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { getCardThemeByIndex } from "../../components/cardThemes";
+import { StatCard } from "../../components/StatCard";
+import { DataTable, type DataTableColumn } from "../../components/DataTable";
+import { exportToCsv } from "../../components/exportToCsv";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../components/ui/select";
 import type { CustomerSegment } from "../../types/common";
 
 export const SEGMENT_LABELS: Record<CustomerSegment, string> = {
@@ -69,29 +72,13 @@ export const initialCustomers = [
   },
 ];
 
+type Customer = (typeof initialCustomers)[number];
+
 const healthScoreStyles: Record<string, { dot: string; label: string }> = {
   healthy: { dot: "bg-emerald-500", label: "Healthy" },
   "at-risk": { dot: "bg-amber-500", label: "At Risk" },
   churned: { dot: "bg-rose-500", label: "Churned" },
 };
-
-function exportCustomersToCsv(customers: typeof initialCustomers) {
-  const headers = ["Name", "Email", "Plan", "MRR", "Status", "Joined", "LTV", "Last Active", "Health"];
-  const rows = customers.map(c => [c.name, c.email, c.plan, c.mrr, c.status, c.joined, c.ltv, c.lastActive, c.healthScore]);
-  const escapeCell = (cell: string) => `"${cell.replace(/"/g, '""')}"`;
-  const csv = [headers, ...rows]
-    .map(row => row.map(escapeCell).join(","))
-    .join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "customers-export.csv";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
 
 export function Customers() {
   const navigate = useNavigate();
@@ -104,19 +91,169 @@ export function Customers() {
     return customersList.filter((c) => c.segments.includes(segmentFilter));
   }, [customersList, segmentFilter]);
 
+  const columns: DataTableColumn<Customer>[] = [
+    {
+      key: "name",
+      header: "Customer",
+      sortValue: (row) => row.name,
+      render: (customer) => (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary-dark/20 rounded-full flex items-center justify-center shrink-0">
+            <Users className="w-5 h-5 text-primary" />
+          </div>
+          <div>
+            <div className="font-medium flex items-center gap-2">
+              {customer.name}
+              <span
+                className={`inline-block w-2 h-2 rounded-full ${healthScoreStyles[customer.healthScore].dot}`}
+                title={healthScoreStyles[customer.healthScore].label}
+              />
+            </div>
+            <div className="text-sm text-muted-foreground flex items-center gap-1">
+              <Mail className="w-3 h-3" />
+              {customer.email}
+            </div>
+            <div className="flex items-center gap-1 mt-1">
+              {customer.segments.map((s) => (
+                <span key={s} className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide bg-white/5 text-muted-foreground border border-white/[0.06]">
+                  {SEGMENT_LABELS[s]}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "plan",
+      header: "Plan",
+      sortValue: (row) => row.plan,
+      render: (customer) => (
+        <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded border border-primary/20">{customer.plan}</span>
+      ),
+    },
+    {
+      key: "mrr",
+      header: "MRR",
+      align: "right",
+      sortValue: (row) => Number(row.mrr.replace(/[^0-9.]/g, "")),
+      render: (customer) => <span className="font-medium">{customer.mrr}</span>,
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortValue: (row) => row.status,
+      render: (customer) => (
+        <span
+          className={`px-2 py-1 text-xs rounded capitalize ${customer.status === "active"
+            ? "bg-success/10 text-success"
+            : customer.status === "trial"
+              ? "bg-warning/10 text-warning"
+              : "bg-muted text-muted-foreground"
+            }`}
+        >
+          {customer.status}
+        </span>
+      ),
+    },
+    {
+      key: "joined",
+      header: "Joined",
+      sortValue: (row) => row.joined,
+      render: (customer) => <span className="text-muted-foreground">{customer.joined}</span>,
+    },
+    {
+      key: "ltv",
+      header: "LTV",
+      align: "right",
+      sortValue: (row) => Number(row.ltv.replace(/[^0-9.]/g, "")),
+      render: (customer) => <span className="font-medium">{customer.ltv}</span>,
+    },
+    {
+      key: "lastActive",
+      header: "Last Active",
+      render: (customer) => <span className="text-muted-foreground">{customer.lastActive}</span>,
+    },
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      className: "w-32",
+      render: (customer) => (
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => toast("Opening message composer...", { description: `Compose a message to ${customer.name}.` })}
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            title="Message customer"
+          >
+            <MessageSquare className="w-4 h-4 text-muted-foreground" />
+          </motion.button>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => navigate(`/tenant/customers/${customer.id}`)}
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+            title="View details"
+          >
+            <Eye className="w-4 h-4 text-muted-foreground" />
+          </motion.button>
+          <div className="relative inline-block">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowMenu(showMenu === customer.id ? null : customer.id)}
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
+            >
+              <MoreVertical className="w-4 h-4 text-muted-foreground" />
+            </motion.button>
+            <AnimatePresence>
+              {showMenu === customer.id && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowMenu(null)} />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                    className="absolute right-0 mt-2 w-40 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden text-left"
+                  >
+                    <button className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2">
+                      <Edit className="w-4 h-4" />
+                      <span>Edit</span>
+                    </button>
+                    <button className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2 text-destructive">
+                      <Trash2 className="w-4 h-4" />
+                      <span>Delete</span>
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Customers</h1>
-          <p className="text-muted-foreground">Manage your customer base</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">Customers</h1>
+          <p className="text-muted-foreground text-sm">Manage your customer base</p>
         </div>
         <div className="flex items-center gap-3">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => {
-              exportCustomersToCsv(customersList);
+              exportToCsv(
+                customersList,
+                ["Name", "Email", "Plan", "MRR", "Status", "Joined", "LTV", "Last Active", "Health"],
+                (c) => [c.name, c.email, c.plan, c.mrr, c.status, c.joined, c.ltv, c.lastActive, c.healthScore],
+                "customers-export.csv",
+              );
               toast.success("Customers exported", { description: `${customersList.length} customers exported to CSV.` });
             }}
             className="px-5 py-3 bg-transparent border border-border rounded-lg text-foreground font-medium flex items-center gap-2 hover:bg-muted/30 transition-colors"
@@ -137,215 +274,43 @@ export function Customers() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {[
-          { label: "Total Customers", value: "1,284", icon: Users },
-          { label: "Active Customers", value: "892", icon: CheckCircle },
-          { label: "Trial Customers", value: "48", icon: Clock },
-          { label: "Total MRR", value: "₹34.6K", icon: IndianRupee },
-        ].map((stat, i) => {
-          const Icon = stat.icon;
-          const theme = getCardThemeByIndex(i);
-          return (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.06 }}
-              className={`relative overflow-hidden p-4 bg-card border ${theme.border} rounded-2xl flex items-center gap-3`}
-            >
-              {/* Top accent bar */}
-              <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${theme.topAccent} rounded-t-2xl pointer-events-none`} />
-              {/* Gradient tint */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${theme.bgGlow} pointer-events-none`} />
-              {/* Glow orb */}
-              <div className={`absolute -bottom-4 -right-4 w-20 h-20 ${theme.orb10} rounded-full blur-2xl pointer-events-none`} />
-              <div className={`relative z-10 w-10 h-10 rounded-xl bg-gradient-to-br ${theme.iconBg} flex items-center justify-center shrink-0`}>
-                <Icon className={`w-5 h-5 ${theme.iconColor}`} />
-              </div>
-              <div className="relative z-10">
-                <div className="text-2xl font-black text-white">{stat.value}</div>
-                <div className="text-[10px] text-muted-foreground uppercase font-semibold tracking-wider">{stat.label}</div>
-              </div>
-            </motion.div>
-          );
-        })}
+        <StatCard title="Total Customers" value="1,284" icon={Users} colorIndex={0} delay={0} />
+        <StatCard title="Active Customers" value="892" icon={CheckCircle} colorIndex={1} delay={0.06} />
+        <StatCard title="Trial Customers" value="48" icon={Clock} colorIndex={2} delay={0.12} />
+        <StatCard title="Total MRR" value="₹34.6K" icon={IndianRupee} colorIndex={3} delay={0.18} />
       </div>
 
-      <div className="flex items-center gap-2 flex-wrap">
-        <button
-          onClick={() => setSegmentFilter("all")}
-          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${segmentFilter === "all" ? "bg-primary/10 text-primary border border-primary/20" : "bg-transparent border border-border text-muted-foreground hover:bg-muted/30"}`}
-        >
-          All
-        </button>
-        {(Object.entries(SEGMENT_LABELS) as [CustomerSegment, string][]).map(([key, label]) => (
-          <button
-            key={key}
-            onClick={() => setSegmentFilter(key)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${segmentFilter === key ? "bg-primary/10 text-primary border border-primary/20" : "bg-transparent border border-border text-muted-foreground hover:bg-muted/30"}`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className={`relative bg-card border ${getCardThemeByIndex(5).border} rounded-2xl overflow-hidden animate-fadeIn`}
-      >
-        {/* Top accent bar */}
-        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${getCardThemeByIndex(5).topAccent} rounded-t-2xl pointer-events-none z-10`} />
-        {/* Gradient tint */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${getCardThemeByIndex(5).bgGlow} pointer-events-none`} />
-        {/* Glow orb */}
-        <div className={`absolute -bottom-10 -right-10 w-48 h-48 ${getCardThemeByIndex(5).orb5} rounded-full blur-3xl pointer-events-none`} />
-
-        <div className="relative z-10 overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-white/[0.01] border-b border-white/[0.04]">
-              <tr>
-                <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                  Customer
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                  Plan
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                  MRR
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                  Status
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                  Joined
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                  LTV
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">
-                  Last Active
-                </th>
-                <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground text-right">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredCustomers.map((customer, index) => (
-                <motion.tr
-                  key={customer.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
-                  className="border-b border-border hover:bg-muted/30 transition-colors group"
-                >
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary-dark/20 rounded-full flex items-center justify-center">
-                        <Users className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <div className="font-medium flex items-center gap-2">
-                          {customer.name}
-                          <span
-                            className={`inline-block w-2 h-2 rounded-full ${healthScoreStyles[customer.healthScore].dot}`}
-                            title={healthScoreStyles[customer.healthScore].label}
-                          />
-                        </div>
-                        <div className="text-sm text-muted-foreground flex items-center gap-1">
-                          <Mail className="w-3 h-3" />
-                          {customer.email}
-                        </div>
-                        <div className="flex items-center gap-1 mt-1">
-                          {customer.segments.map((s) => (
-                            <span key={s} className="px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wide bg-white/5 text-muted-foreground border border-white/[0.06]">
-                              {SEGMENT_LABELS[s]}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded">
-                      {customer.plan}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 font-medium">{customer.mrr}</td>
-                  <td className="py-4 px-6">
-                    <span
-                      className={`px-2 py-1 text-xs rounded capitalize ${customer.status === "active"
-                        ? "bg-success/10 text-success"
-                        : customer.status === "trial"
-                          ? "bg-warning/10 text-warning"
-                          : "bg-muted text-muted-foreground"
-                        }`}
-                    >
-                      {customer.status}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-muted-foreground">{customer.joined}</td>
-                  <td className="py-4 px-6 font-medium">{customer.ltv}</td>
-                  <td className="py-4 px-6 text-muted-foreground">{customer.lastActive}</td>
-                  <td className="py-4 px-6 text-right">
-                    <div className="flex items-center justify-end gap-1">
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => toast("Opening message composer...", { description: `Compose a message to ${customer.name}.` })}
-                        className="p-2 hover:bg-muted rounded-lg transition-colors"
-                        title="Message customer"
-                      >
-                        <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => navigate(`/tenant/customers/${customer.id}`)}
-                        className="p-2 hover:bg-muted rounded-lg transition-colors"
-                        title="View details"
-                      >
-                        <Eye className="w-4 h-4 text-muted-foreground" />
-                      </motion.button>
-                      <div className="relative inline-block">
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => setShowMenu(showMenu === customer.id ? null : customer.id)}
-                        className="p-2 hover:bg-muted rounded-lg transition-colors"
-                      >
-                        <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                      </motion.button>
-                      <AnimatePresence>
-                        {showMenu === customer.id && (
-                          <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                            className="absolute right-0 mt-2 w-40 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden text-left"
-                          >
-                            <button className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2">
-                              <Edit className="w-4 h-4" />
-                              <span>Edit</span>
-                            </button>
-                            <button className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-2 text-destructive">
-                              <Trash2 className="w-4 h-4" />
-                              <span>Delete</span>
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                      </div>
-                    </div>
-                  </td>
-                </motion.tr>
+      <DataTable
+        columns={columns}
+        data={filteredCustomers}
+        getRowId={(row) => row.id}
+        searchable
+        searchPlaceholder="Search name or email…"
+        searchKeys={(row) => `${row.name} ${row.email}`}
+        themeIndex={5}
+        pageSize={10}
+        toolbar={
+          <Select value={segmentFilter} onValueChange={(v) => setSegmentFilter(v as CustomerSegment | "all")}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Segment" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Segments</SelectItem>
+              {(Object.entries(SEGMENT_LABELS) as [CustomerSegment, string][]).map(([key, label]) => (
+                <SelectItem key={key} value={key}>
+                  {label}
+                </SelectItem>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </motion.div>
+            </SelectContent>
+          </Select>
+        }
+        emptyState={{
+          icon: Users,
+          title: "No customers found",
+          description: "Try adjusting your search or filters, or add your first customer.",
+          action: { label: "Add Customer", onClick: () => navigate("/tenant/customers/create") },
+        }}
+      />
     </motion.div>
   );
 }

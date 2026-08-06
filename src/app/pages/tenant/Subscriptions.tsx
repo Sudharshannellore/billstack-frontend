@@ -1,10 +1,12 @@
 import { motion, AnimatePresence } from "motion/react";
 import { Plus, Repeat, MoreVertical, PlusCircle, RefreshCw, XCircle, Download, Pause, PlayCircle, ArrowUpCircle, ArrowDownCircle, CalendarClock, History, Calculator } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { getCardThemeByIndex } from "../../components/cardThemes";
 import { StatusBadge } from "../../components/StatusBadge";
+import { DataTable, type DataTableColumn } from "../../components/DataTable";
+import { exportToCsv } from "../../components/exportToCsv";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../../components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "../../components/ui/dialog";
@@ -20,35 +22,30 @@ const initialSubscriptions = [
   { id: 5, customer: "Emma Davis", productId: "prod_2", planId: "plan_2_1", plan: "Pay as you go", status: "suspended" as SubscriptionStatus, nextBilling: "—", mrr: "₹0", renewalRisk: "high" as RenewalRisk, daysUntilBilling: 0 },
 ];
 
+type Subscription = (typeof initialSubscriptions)[number];
+
 const riskStyles: Record<RenewalRisk, string> = {
   low: "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20",
   medium: "bg-amber-500/10 text-amber-500 border border-amber-500/20",
   high: "bg-rose-500/10 text-rose-500 border border-rose-500/20",
 };
 
-function exportSubscriptionsToCsv(subscriptions: typeof initialSubscriptions) {
-  const headers = ["Customer", "Plan", "Status", "Next Billing", "MRR"];
-  const rows = subscriptions.map(s => [s.customer, s.plan, s.status, s.nextBilling, s.mrr]);
-  const escapeCell = (cell: string) => `"${cell.replace(/"/g, '""')}"`;
-  const csv = [headers, ...rows]
-    .map(row => row.map(escapeCell).join(","))
-    .join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "subscriptions-export.csv";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
+const STATUS_FILTER_OPTIONS: { value: SubscriptionStatus | "all"; label: string }[] = [
+  { value: "all", label: "All Statuses" },
+  { value: "active", label: "Active" },
+  { value: "trial", label: "Trial" },
+  { value: "past_due", label: "Past Due" },
+  { value: "grace_period", label: "Grace Period" },
+  { value: "paused", label: "Paused" },
+  { value: "suspended", label: "Suspended" },
+  { value: "cancelled", label: "Cancelled" },
+];
 
 export function Subscriptions() {
-  const theme = getCardThemeByIndex(0);
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState<number | null>(null);
   const [subscriptionsList, setSubscriptionsList] = useState(initialSubscriptions);
+  const [statusFilter, setStatusFilter] = useState<SubscriptionStatus | "all">("all");
   const [prorationSubId, setProrationSubId] = useState<number | null>(null);
   const [forecastSubId, setForecastSubId] = useState<number | null>(null);
   const [timelineSubId, setTimelineSubId] = useState<number | null>(null);
@@ -58,23 +55,244 @@ export function Subscriptions() {
     toast.success(message);
   };
 
+  const filteredSubscriptions = useMemo(() => {
+    if (statusFilter === "all") return subscriptionsList;
+    return subscriptionsList.filter((s) => s.status === statusFilter);
+  }, [subscriptionsList, statusFilter]);
+
   const prorationSub = subscriptionsList.find((s) => s.id === prorationSubId) ?? null;
   const forecastSub = subscriptionsList.find((s) => s.id === forecastSubId) ?? null;
   const timelineSub = subscriptionsList.find((s) => s.id === timelineSubId) ?? null;
 
+  const columns: DataTableColumn<Subscription>[] = [
+    {
+      key: "customer",
+      header: "Customer",
+      sortValue: (row) => row.customer,
+      render: (sub) => (
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary-dark/20 rounded-full flex items-center justify-center shrink-0">
+            <Repeat className="w-5 h-5 text-primary" />
+          </div>
+          <span className="font-medium">{sub.customer}</span>
+        </div>
+      ),
+    },
+    {
+      key: "plan",
+      header: "Plan",
+      sortValue: (row) => row.plan,
+      render: (sub) => <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded border border-primary/20">{sub.plan}</span>,
+    },
+    {
+      key: "status",
+      header: "Status",
+      sortValue: (row) => row.status,
+      render: (sub) => (
+        <div className="flex items-center gap-2">
+          <StatusBadge status={sub.status} />
+          <span className={`px-2 py-1 text-xs rounded capitalize ${riskStyles[sub.renewalRisk]}`}>{sub.renewalRisk} risk</span>
+        </div>
+      ),
+    },
+    {
+      key: "nextBilling",
+      header: "Next Billing",
+      sortValue: (row) => row.nextBilling,
+      render: (sub) => (
+        <div className={sub.daysUntilBilling <= 3 ? "text-amber-500 font-medium" : "text-muted-foreground"}>
+          {sub.nextBilling}
+          {sub.daysUntilBilling <= 3 && <span className="block text-xs text-amber-500/80">Due in {sub.daysUntilBilling}d</span>}
+        </div>
+      ),
+    },
+    {
+      key: "mrr",
+      header: "MRR",
+      align: "right",
+      sortValue: (row) => Number(row.mrr.replace(/[^0-9.]/g, "")),
+      render: (sub) => <span className="font-bold text-primary">{sub.mrr}</span>,
+    },
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      className: "w-40",
+      render: (sub) => (
+        <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => navigate(`/tenant/subscriptions/${sub.id}/add-topup`)}
+            title="Add Topup"
+            className="p-2 hover:bg-muted rounded-lg transition-colors"
+          >
+            <PlusCircle className="w-4 h-4 text-primary" />
+          </motion.button>
+          {sub.status === "paused" ? (
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setStatus(sub.id, "active", `${sub.customer}'s subscription is active again.`)}
+              title="Resume"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
+            >
+              <PlayCircle className="w-4 h-4 text-emerald-500" />
+            </motion.button>
+          ) : sub.status === "active" ? (
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setStatus(sub.id, "paused", `${sub.customer}'s subscription has been paused.`)}
+              title="Pause"
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
+            >
+              <Pause className="w-4 h-4 text-amber-500" />
+            </motion.button>
+          ) : null}
+          <div className="relative inline-block">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setShowMenu(showMenu === sub.id ? null : sub.id)}
+              className="p-2 hover:bg-muted rounded-lg transition-colors"
+            >
+              <MoreVertical className="w-4 h-4 text-muted-foreground" />
+            </motion.button>
+            <AnimatePresence>
+              {showMenu === sub.id && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowMenu(null)} />
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                    className="absolute right-0 mt-2 w-52 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden text-left"
+                  >
+                    <button
+                      onClick={() => {
+                        setShowMenu(null);
+                        setProrationSubId(sub.id);
+                      }}
+                      className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium"
+                    >
+                      <Calculator className="w-4 h-4 text-cyan-500" />
+                      <span>Proration Preview</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMenu(null);
+                        setForecastSubId(sub.id);
+                      }}
+                      className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium"
+                    >
+                      <CalendarClock className="w-4 h-4 text-violet-400" />
+                      <span>Renewal Forecast</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMenu(null);
+                        setTimelineSubId(sub.id);
+                      }}
+                      className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium"
+                    >
+                      <History className="w-4 h-4 text-muted-foreground" />
+                      <span>View Timeline</span>
+                    </button>
+                    <div className="h-[1px] w-full bg-border my-1" />
+                    <button
+                      onClick={() => {
+                        setShowMenu(null);
+                        setStatus(sub.id, "active", `${sub.customer} upgraded to a higher tier.`);
+                      }}
+                      className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium"
+                    >
+                      <ArrowUpCircle className="w-4 h-4 text-emerald-500" />
+                      <span>Upgrade</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowMenu(null);
+                        setStatus(sub.id, "active", `${sub.customer} downgraded to a lower tier.`);
+                      }}
+                      className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium"
+                    >
+                      <ArrowDownCircle className="w-4 h-4 text-amber-500" />
+                      <span>Downgrade</span>
+                    </button>
+                    {sub.status === "trial" && (
+                      <button
+                        onClick={() => {
+                          setShowMenu(null);
+                          toast.success(`Trial extended for ${sub.customer}.`);
+                        }}
+                        className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium"
+                      >
+                        <RefreshCw className="w-4 h-4 text-blue-500" />
+                        <span>Extend Trial</span>
+                      </button>
+                    )}
+                    {(sub.status === "cancelled" || sub.status === "expired" || sub.status === "suspended") && (
+                      <button
+                        onClick={() => {
+                          setShowMenu(null);
+                          setStatus(sub.id, "active", `${sub.customer}'s subscription reactivated.`);
+                        }}
+                        className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium"
+                      >
+                        <PlayCircle className="w-4 h-4 text-emerald-500" />
+                        <span>Reactivate</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setShowMenu(null);
+                        toast.success(`${sub.customer}'s subscription renewed early.`);
+                      }}
+                      className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium"
+                    >
+                      <RefreshCw className="w-4 h-4 text-blue-500" />
+                      <span>Renew Now</span>
+                    </button>
+                    <div className="h-[1px] w-full bg-border my-1" />
+                    <button
+                      onClick={() => {
+                        setShowMenu(null);
+                        setStatus(sub.id, "cancelled", `${sub.customer}'s subscription is now cancelled.`);
+                      }}
+                      className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium text-destructive"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      <span>Cancel Sub</span>
+                    </button>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold mb-2">Subscriptions</h1>
-          <p className="text-muted-foreground">Manage customer subscriptions and billing</p>
+          <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">Subscriptions</h1>
+          <p className="text-muted-foreground text-sm">Manage customer subscriptions and billing</p>
         </div>
         <div className="flex items-center gap-3">
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => {
-              exportSubscriptionsToCsv(subscriptionsList);
+              exportToCsv(
+                subscriptionsList,
+                ["Customer", "Plan", "Status", "Next Billing", "MRR"],
+                (s) => [s.customer, s.plan, s.status, s.nextBilling, s.mrr],
+                "subscriptions-export.csv",
+              );
               toast.success("Subscriptions exported", { description: `${subscriptionsList.length} subscriptions exported to CSV.` });
             }}
             className="px-5 py-3 bg-transparent border border-border rounded-lg text-foreground font-medium flex items-center gap-2 hover:bg-muted/30 transition-colors"
@@ -94,215 +312,36 @@ export function Subscriptions() {
         </div>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`relative bg-card border ${theme.border} rounded-2xl overflow-hidden`}
-      >
-        {/* Top accent bar */}
-        <div className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r ${theme.topAccent} rounded-t-2xl pointer-events-none z-10`} />
-        {/* Gradient tint */}
-        <div className={`absolute inset-0 bg-gradient-to-br ${theme.bgGlow} pointer-events-none`} />
-        {/* Glow orb */}
-        <div className={`absolute -bottom-10 -right-10 w-48 h-48 bg-gradient-to-br ${theme.bgGlow} rounded-full blur-3xl pointer-events-none`} />
-
-        <div className="relative z-10 overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-white/[0.01] border-b border-white/[0.04]">
-            <tr>
-              <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">Customer</th>
-              <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">Plan</th>
-              <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">Status</th>
-              <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">Next Billing</th>
-              <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground">MRR</th>
-              <th className="text-left py-4 px-6 text-sm font-medium text-muted-foreground text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {subscriptionsList.map((sub, index) => (
-              <motion.tr
-                key={sub.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="border-b border-border hover:bg-muted/30 transition-colors group"
-              >
-                <td className="py-4 px-6">
-                  <div className="flex items-center gap-3">
-                     <div className="w-10 h-10 bg-gradient-to-br from-primary/20 to-primary-dark/20 rounded-full flex items-center justify-center">
-                      <Repeat className="w-5 h-5 text-primary" />
-                    </div>
-                    <span className="font-medium">{sub.customer}</span>
-                  </div>
-                </td>
-                <td className="py-4 px-6">
-                  <span className="px-2 py-1 bg-primary/10 text-primary text-xs rounded border border-primary/20">{sub.plan}</span>
-                </td>
-                <td className="py-4 px-6">
-                  <div className="flex items-center gap-2">
-                    <StatusBadge status={sub.status} />
-                    <span className={`px-2 py-1 text-xs rounded capitalize ${riskStyles[sub.renewalRisk]}`}>
-                      {sub.renewalRisk} risk
-                    </span>
-                  </div>
-                </td>
-                <td className={`py-4 px-6 text-sm ${
-                  sub.daysUntilBilling <= 3 ? 'bg-amber-500/10 text-amber-500 font-medium rounded' : 'text-muted-foreground'
-                }`}>
-                  {sub.nextBilling}
-                  {sub.daysUntilBilling <= 3 && (
-                    <span className="block text-xs text-amber-500/80">Due in {sub.daysUntilBilling}d</span>
-                  )}
-                </td>
-                <td className="py-4 px-6 font-bold text-primary">{sub.mrr}</td>
-                <td className="py-4 px-6 text-right">
-                  <div className="flex items-center justify-end gap-1">
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => navigate(`/tenant/subscriptions/${sub.id}/add-topup`)}
-                      title="Add Topup"
-                      className="p-2 hover:bg-muted rounded-lg transition-colors"
-                    >
-                      <PlusCircle className="w-4 h-4 text-primary" />
-                    </motion.button>
-                    {sub.status === "paused" ? (
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => setStatus(sub.id, "active", `${sub.customer}'s subscription is active again.`)}
-                        title="Resume"
-                        className="p-2 hover:bg-muted rounded-lg transition-colors"
-                      >
-                        <PlayCircle className="w-4 h-4 text-emerald-500" />
-                      </motion.button>
-                    ) : sub.status === "active" ? (
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => setStatus(sub.id, "paused", `${sub.customer}'s subscription has been paused.`)}
-                        title="Pause"
-                        className="p-2 hover:bg-muted rounded-lg transition-colors"
-                      >
-                        <Pause className="w-4 h-4 text-amber-500" />
-                      </motion.button>
-                    ) : null}
-                  <div className="relative inline-block">
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      onClick={() => setShowMenu(showMenu === sub.id ? null : sub.id)}
-                      className="p-2 hover:bg-muted rounded-lg transition-colors"
-                    >
-                      <MoreVertical className="w-4 h-4 text-muted-foreground" />
-                    </motion.button>
-                     <AnimatePresence>
-                      {showMenu === sub.id && (
-                        <motion.div
-                          initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                          className="absolute right-0 mt-2 w-52 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden text-left"
-                        >
-                          <button
-                             onClick={() => {
-                               setShowMenu(null);
-                               setProrationSubId(sub.id);
-                             }}
-                             className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium">
-                            <Calculator className="w-4 h-4 text-cyan-500" />
-                            <span>Proration Preview</span>
-                          </button>
-                          <button
-                             onClick={() => {
-                               setShowMenu(null);
-                               setForecastSubId(sub.id);
-                             }}
-                             className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium">
-                            <CalendarClock className="w-4 h-4 text-violet-400" />
-                            <span>Renewal Forecast</span>
-                          </button>
-                          <button
-                             onClick={() => {
-                               setShowMenu(null);
-                               setTimelineSubId(sub.id);
-                             }}
-                             className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium">
-                            <History className="w-4 h-4 text-muted-foreground" />
-                            <span>View Timeline</span>
-                          </button>
-                          <div className="h-[1px] w-full bg-border my-1"></div>
-                          <button
-                             onClick={() => {
-                               setShowMenu(null);
-                               setStatus(sub.id, "active", `${sub.customer} upgraded to a higher tier.`);
-                             }}
-                             className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium">
-                            <ArrowUpCircle className="w-4 h-4 text-emerald-500" />
-                            <span>Upgrade</span>
-                          </button>
-                          <button
-                             onClick={() => {
-                               setShowMenu(null);
-                               setStatus(sub.id, "active", `${sub.customer} downgraded to a lower tier.`);
-                             }}
-                             className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium">
-                            <ArrowDownCircle className="w-4 h-4 text-amber-500" />
-                            <span>Downgrade</span>
-                          </button>
-                          {sub.status === "trial" && (
-                            <button
-                               onClick={() => {
-                                 setShowMenu(null);
-                                 toast.success(`Trial extended for ${sub.customer}.`);
-                               }}
-                               className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium">
-                              <RefreshCw className="w-4 h-4 text-blue-500" />
-                              <span>Extend Trial</span>
-                            </button>
-                          )}
-                          {(sub.status === "cancelled" || sub.status === "expired" || sub.status === "suspended") && (
-                            <button
-                               onClick={() => {
-                                 setShowMenu(null);
-                                 setStatus(sub.id, "active", `${sub.customer}'s subscription reactivated.`);
-                               }}
-                               className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium">
-                              <PlayCircle className="w-4 h-4 text-emerald-500" />
-                              <span>Reactivate</span>
-                            </button>
-                          )}
-                          <button
-                             onClick={() => {
-                               setShowMenu(null);
-                               toast.success(`${sub.customer}'s subscription renewed early.`);
-                             }}
-                             className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium">
-                            <RefreshCw className="w-4 h-4 text-blue-500" />
-                            <span>Renew Now</span>
-                          </button>
-                          <div className="h-[1px] w-full bg-border my-1"></div>
-                          <button
-                            onClick={() => {
-                               setShowMenu(null);
-                               setStatus(sub.id, "cancelled", `${sub.customer}'s subscription is now cancelled.`);
-                            }}
-                            className="w-full px-4 py-2 text-sm hover:bg-muted transition-colors flex items-center gap-3 font-medium text-destructive">
-                            <XCircle className="w-4 h-4" />
-                            <span>Cancel Sub</span>
-                          </button>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                  </div>
-                </td>
-              </motion.tr>
-            ))}
-          </tbody>
-        </table>
-        </div>
-      </motion.div>
+      <DataTable
+        columns={columns}
+        data={filteredSubscriptions}
+        getRowId={(row) => row.id}
+        searchable
+        searchPlaceholder="Search customer or plan…"
+        searchKeys={(row) => `${row.customer} ${row.plan}`}
+        themeIndex={0}
+        pageSize={10}
+        toolbar={
+          <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as SubscriptionStatus | "all")}>
+            <SelectTrigger className="w-44">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_FILTER_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        }
+        emptyState={{
+          icon: Repeat,
+          title: "No subscriptions found",
+          description: "Try adjusting your search or filters, or create a new subscription.",
+          action: { label: "Create Subscription", onClick: () => navigate("/tenant/subscriptions/create") },
+        }}
+      />
 
       {/* Proration Preview Dialog */}
       <Dialog open={prorationSubId !== null} onOpenChange={(open) => !open && setProrationSubId(null)}>

@@ -111,12 +111,12 @@ export function CreateCoupon({ onSuccess, onCancel }: CreateCouponProps) {
   const nextStep = () => setCurrentStep(prev => Math.min(prev + 1, COUPON_STEPS.length - 1));
   const prevStep = () => setCurrentStep(prev => Math.max(prev - 1, 0));
 
+  const stepValues = form.watch();
   const isStepValid = () => {
-    const values = form.getValues();
     switch (currentStep) {
-      case 0: return !!values.productId && !!values.planId;
-      case 1: return !!values.name && !!values.code && !!values.expiry;
-      case 2: return !!values.type && !!values.value;
+      case 0: return !!stepValues.productId && !!stepValues.planId;
+      case 1: return !!stepValues.name && !!stepValues.code && !!stepValues.expiry;
+      case 2: return !!stepValues.type && !!stepValues.value;
       default: return false;
     }
   };

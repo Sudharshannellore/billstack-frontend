@@ -52,8 +52,8 @@ export function CreateProduct({ onSuccess, onCancel }: CreateProductProps) {
     },
   });
 
+  const values = form.watch();
   const isStepValid = () => {
-    const values = form.getValues();
     switch (currentStep) {
       case 0:
         return !!values.name && !!values.description && !!values.currency;

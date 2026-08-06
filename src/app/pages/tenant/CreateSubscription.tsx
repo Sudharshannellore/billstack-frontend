@@ -75,8 +75,8 @@ export function CreateSubscription({ onSuccess, onCancel }: CreateSubscriptionPr
   const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0));
 
+  const values = form.watch();
   const isStepValid = () => {
-    const values = form.getValues();
     switch (currentStep) {
       case 0:
         return !!values.customerId;

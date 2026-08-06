@@ -12,11 +12,12 @@ import {
   CreditCard,
   Coins,
   ListChecks,
+  Plus,
+  X,
 } from "lucide-react";
 import { BillingStyle, BillingStyleSelector } from "../../components/billing/BillingStyleSelector";
 import { MOCK_PRODUCTS } from "../../data/mock-plans";
 import { Input } from "../../components/ui/input";
-import { Textarea } from "../../components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -91,6 +92,31 @@ export function CreatePlan({ onSuccess, onCancel, isEditing = false }: CreatePla
     setFormValues(prev => ({ ...prev, [name]: value }));
   };
 
+  const featureList = formValues.features
+    .split(/[,\n]/)
+    .map((f) => f.trim())
+    .filter(Boolean);
+
+  const [featureInput, setFeatureInput] = useState("");
+
+  const addFeature = () => {
+    const trimmed = featureInput.trim();
+    if (!trimmed || featureList.includes(trimmed)) return;
+    setFormValues(prev => ({ ...prev, features: [...featureList, trimmed].join("\n") }));
+    setFeatureInput("");
+  };
+
+  const removeFeature = (index: number) => {
+    setFormValues(prev => ({ ...prev, features: featureList.filter((_, i) => i !== index).join("\n") }));
+  };
+
+  const handleFeatureInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addFeature();
+    }
+  };
+
   const handleSelectChange = (name: string, value: string) => {
     setFormValues(prev => ({ ...prev, [name]: value }));
   };
@@ -118,18 +144,13 @@ export function CreatePlan({ onSuccess, onCancel, isEditing = false }: CreatePla
       config.price_per_unit = formValues.pricePerUnit;
     }
 
-    const features = formValues.features
-      .split(/[,\n]/)
-      .map((f) => f.trim())
-      .filter(Boolean);
-
     const payload = {
       product_id: formValues.productId,
       payment_type: formValues.paymentType,
       name: formValues.name,
       billing_style: formValues.billingStyle,
       config: config,
-      features,
+      features: featureList,
     };
 
     console.log("Submitting payload:", payload);
@@ -464,18 +485,60 @@ export function CreatePlan({ onSuccess, onCancel, isEditing = false }: CreatePla
                       )}
 
                       <div className="space-y-2">
-                        <Label htmlFor="features" className="text-sm font-bold italic flex items-center gap-2">
+                        <Label htmlFor="feature-input" className="text-sm font-bold italic flex items-center gap-2">
                           <ListChecks className="w-4 h-4 text-primary" />
-                          <span>Included Features (one per line or comma-separated)</span>
+                          <span>Included Features</span>
                         </Label>
-                        <Textarea
-                          id="features"
-                          name="features"
-                          value={formValues.features}
-                          onChange={handleInputChange}
-                          placeholder={"Up to 10,000 API calls/mo\n5 team seats\nPriority support"}
-                          className="min-h-[100px]"
-                        />
+                        <div className="rounded-2xl border border-border bg-muted/20 p-3 space-y-3">
+                          <div className="flex items-center gap-2">
+                            <Input
+                              id="feature-input"
+                              value={featureInput}
+                              onChange={(e) => setFeatureInput(e.target.value)}
+                              onKeyDown={handleFeatureInputKeyDown}
+                              placeholder="e.g. Up to 10,000 API calls/mo"
+                              className="h-11"
+                            />
+                            <Button
+                              type="button"
+                              onClick={addFeature}
+                              disabled={!featureInput.trim()}
+                              className="h-11 px-4 shrink-0 flex items-center gap-1.5"
+                            >
+                              <Plus className="w-4 h-4" />
+                              <span>Add</span>
+                            </Button>
+                          </div>
+
+                          {featureList.length > 0 ? (
+                            <ul className="space-y-2">
+                              {featureList.map((feature, idx) => (
+                                <motion.li
+                                  key={`${feature}-${idx}`}
+                                  initial={{ opacity: 0, y: -6 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0 }}
+                                  className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-card border border-border"
+                                >
+                                  <span className="flex items-center gap-2 text-sm font-medium min-w-0">
+                                    <Check className="w-4 h-4 text-primary shrink-0" />
+                                    <span className="truncate">{feature}</span>
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeFeature(idx)}
+                                    className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
+                                    aria-label={`Remove ${feature}`}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </motion.li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <p className="text-xs text-muted-foreground italic px-1">No features added yet.</p>
+                          )}
+                        </div>
                       </div>
                     </div>
 
@@ -560,18 +623,14 @@ export function CreatePlan({ onSuccess, onCancel, isEditing = false }: CreatePla
 
                         <div className="space-y-3">
                           <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider">What's included:</div>
-                          {formValues.features ? (
+                          {featureList.length > 0 ? (
                             <ul className="space-y-2">
-                              {formValues.features
-                                .split(/[,\n]/)
-                                .map((f) => f.trim())
-                                .filter(Boolean)
-                                .map((feature, idx) => (
-                                  <li key={idx} className="flex items-center gap-2 text-xs font-medium text-foreground">
-                                    <Check className="w-4 h-4 text-primary shrink-0" />
-                                    <span>{feature}</span>
-                                  </li>
-                                ))}
+                              {featureList.map((feature, idx) => (
+                                <li key={idx} className="flex items-center gap-2 text-xs font-medium text-foreground">
+                                  <Check className="w-4 h-4 text-primary shrink-0" />
+                                  <span>{feature}</span>
+                                </li>
+                              ))}
                             </ul>
                           ) : (
                             <p className="text-xs text-muted-foreground italic">Add features to see them listed here.</p>
